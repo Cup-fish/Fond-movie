@@ -160,13 +160,6 @@ http://localhost
 - 交易链路不相信展示缓存，下单时重新做 Redis Lua 和 DB 乐观锁校验。
 - Redis 回滚失败会记录 `stock:dirty:rollback`，定时任务从 DB 拉真实库存覆盖 Redis。
 
-## 安全和开源注意事项
-
-- 不要提交 `.env`、私钥、证书、服务器 IP、SSH 密码。
-- 根目录 `.gitignore` 已忽略 `upload/`、`target/`、`node_modules/`、`.next/`、`.env*`、证书/密钥文件。
-- `upload/deploy.py` 已改为从环境变量读取部署信息，不再写死服务器密码。
-- Docker Compose 中 MySQL 密码和 JWT 密钥从 `.env` 读取。
-
 部署脚本需要的环境变量示例：
 
 ```powershell
