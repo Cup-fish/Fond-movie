@@ -231,8 +231,7 @@ public class SeatService {
         try {
             // === 第二阶段：同步建单 ===
             OrderVO orderVO = createOrderInTransaction(userId, dto);
-            // 锁座成功 → 释放排队入场名额（热门场次准入推进）
-            queueService.leave(scheduleId, userId);
+            // 注意：不在此释放排队入场名额 — 名额在支付成功/关单时释放（每个订单恰好 leave 一次）
             return orderVO;
         } catch (Exception e) {
             // 补偿：DB 事务失败 → 释放刚写的 Redis 锁

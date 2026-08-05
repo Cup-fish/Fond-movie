@@ -170,6 +170,21 @@ CREATE TABLE IF NOT EXISTS ticket_order (
     deleted         INT           DEFAULT 0
 );
 
+-- 支付单表（模拟真实支付网关：支付单与业务订单分离，生命周期独立）
+CREATE TABLE IF NOT EXISTS payment_trade (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_no      VARCHAR(64)   NOT NULL COMMENT '支付单号（网关侧）',
+    order_no        VARCHAR(64)   NOT NULL COMMENT '关联业务订单号',
+    user_id         BIGINT        NOT NULL COMMENT '用户ID',
+    total_price     DECIMAL(10,2) NOT NULL COMMENT '支付金额（积分）',
+    status          INT           DEFAULT 0 COMMENT '0=待支付 1=已支付 2=已关闭',
+    pay_time        TIMESTAMP     NULL          COMMENT '支付时间',
+    expire_time     TIMESTAMP     NOT NULL COMMENT '过期时间（与订单对齐，15分钟）',
+    create_time     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    deleted         INT           DEFAULT 0
+);
+
 -- 用户想看记录表
 CREATE TABLE IF NOT EXISTS user_wish (
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -233,6 +248,9 @@ CREATE INDEX IF NOT EXISTS idx_schedule_movie ON movie_schedule(movie_id, show_d
 CREATE INDEX IF NOT EXISTS idx_schedule_cinema ON movie_schedule(cinema_id, show_date, deleted);
 CREATE INDEX IF NOT EXISTS idx_order_user   ON ticket_order(user_id, status, deleted);
 CREATE INDEX IF NOT EXISTS idx_order_no     ON ticket_order(order_no);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_no ON payment_trade(payment_no);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_order_no ON payment_trade(order_no);
+CREATE INDEX IF NOT EXISTS idx_payment_user ON payment_trade(user_id, status, deleted);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_wish_unique ON user_wish(user_id, movie_id);
 CREATE INDEX IF NOT EXISTS idx_hall_cinema ON cinema_hall(cinema_id, deleted);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_hall_unique ON cinema_hall(cinema_id, hall_name, deleted);

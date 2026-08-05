@@ -151,7 +151,6 @@ public class ScheduleService {
      */
     public List<String> getAvailableDates(Long movieId) {
         // 查询未来7天有场次的日期
-        List<String> dates = new ArrayList<>();
         String cacheKey = SCHEDULE_DATES_CACHE_PREFIX + movieId;
         return cacheService.get(cacheKey, () -> {
             List<String> dates = new ArrayList<>();

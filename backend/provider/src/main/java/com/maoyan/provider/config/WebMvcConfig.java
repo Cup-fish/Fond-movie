@@ -39,7 +39,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 )
                 .excludePathPatterns(
                         "/ajax/wish/check/**",  // 检查想看状态无需登录
-                        "/api/seat/layout"      // 查看座位布局无需登录
+                        "/api/seat/layout",     // 查看座位布局无需登录
+                        "/api/payment/mock/**"  // 模拟支付网关回调/收银台摘要（无用户态，验签兜底）
                 );
     }
 

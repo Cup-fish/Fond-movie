@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
  *   queue:waiting:{scheduleId}     — 等候队列（ZSet, score=入场时间戳）
  *   queue:token:{scheduleId}:{userId} — 入场令牌（带 TTL）
  *
- * 入场令牌在以下时机释放：
- *   1. 锁座成功（用户已进入支付流程，名额释放给下一位）
- *   2. 订单取消/超时
+ * 入场令牌在以下时机释放（每个订单恰好释放一次，避免 DECR 双释放）：
+ *   1. 支付成功（settleOrder 内）
+ *   2. 订单取消/超时（closePendingOrder 内）
  *   3. 令牌 TTL 自动过期
  * </pre>
  */
@@ -188,9 +188,10 @@ public class QueueService {
     }
 
     /**
-     * 离场 — 用户完成锁座/订单取消/超时时调用
+     * 离场 — 支付成功或订单取消/超时时调用（每个订单恰好一次）
      *
-     * <p>释放入场名额并自动推进等候队列的下一位入场</p>
+     * <p>Lua DECR 非幂等，锁座成功处不再调用（SeatService），
+     * 名额在订单终态（支付成功 / 关单）时释放并自动推进等候队列下一位入场</p>
      */
     public void leave(Long scheduleId, Long userId) {
         if (!isHotSchedule(scheduleId)) return;

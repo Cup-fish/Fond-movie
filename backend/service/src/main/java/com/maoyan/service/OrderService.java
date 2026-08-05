@@ -2,6 +2,7 @@ package com.maoyan.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.maoyan.dao.mapper.OrderMapper;
+import com.maoyan.dao.mapper.PaymentTradeMapper;
 import com.maoyan.dao.mapper.ScheduleMapper;
 import com.maoyan.dao.mapper.SeatLockMapper;
 import com.maoyan.domain.enums.OrderStatusEnum;
@@ -38,6 +39,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final ScheduleMapper scheduleMapper;
     private final SeatLockMapper seatLockMapper;
+    private final PaymentTradeMapper paymentTradeMapper;
     private final OutboxService outboxService;
     private final SeatLockScriptService lockScriptService;
     private final QueueService queueService;
@@ -47,12 +49,14 @@ public class OrderService {
     public OrderService(OrderMapper orderMapper,
                         ScheduleMapper scheduleMapper,
                         SeatLockMapper seatLockMapper,
+                        PaymentTradeMapper paymentTradeMapper,
                         OutboxService outboxService,
                         SeatLockScriptService lockScriptService,
                         QueueService queueService) {
         this.orderMapper = orderMapper;
         this.scheduleMapper = scheduleMapper;
         this.seatLockMapper = seatLockMapper;
+        this.paymentTradeMapper = paymentTradeMapper;
         this.outboxService = outboxService;
         this.lockScriptService = lockScriptService;
         this.queueService = queueService;
@@ -112,9 +116,13 @@ public class OrderService {
     // =================== 内部方法 ===================
 
     /**
-     * 关闭待支付订单 — 回滚库存 + 释放锁 + outbox 事件
+     * 关闭待支付订单 — 回滚库存 + 释放锁 + 关支付单 + outbox 事件
+     *
+     * <p>public 供 PaymentService 复用（扫码支付链路中懒过期关单走同一实现，
+     * 避免双份逻辑漂移）；事务边界由调用方（cancelOrder / cancelExpiredOrders /
+     * PaymentService.mockNotify 等 @Transactional 方法）承担。</p>
      */
-    private void closePendingOrder(OrderPO order, String reason) {
+    public void closePendingOrder(OrderPO order, String reason) {
         LocalDateTime now = LocalDateTime.now();
         int closed = orderMapper.closePendingOrder(order.getOrderNo(), now);
         if (closed == 0) return;
@@ -127,6 +135,9 @@ public class OrderService {
 
         // 释放座位锁
         seatLockMapper.releaseOrderLocks(order.getOrderNo());
+
+        // ★ 关单联动：支付单同步关闭
+        paymentTradeMapper.closeByOrderNo(order.getOrderNo());
 
         // ★ 释放排队入场名额（热门场次准入推进）
         queueService.leave(order.getScheduleId(), order.getUserId());

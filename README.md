@@ -45,7 +45,7 @@ maoyan
 
 ## 快速启动：本地开发
 
-本地开发默认使用 H2 内存数据库，不依赖 MySQL、Redis、RocketMQ，适合先看功能。
+本地开发默认使用 H2 文件数据库（`backend/data/maoyan.mv.db`，重启数据不丢失），不依赖 MySQL、Redis、RocketMQ，适合先看功能。
 
 ### 1. 启动后端
 
@@ -64,7 +64,7 @@ H2 控制台：
 
 ```text
 http://localhost:8080/h2-console
-JDBC URL: jdbc:h2:mem:maoyan
+JDBC URL: jdbc:h2:file:./data/maoyan
 User: sa
 Password: 留空
 ```

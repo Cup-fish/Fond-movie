@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- ==================== 正在热映电影 (movie_status=1, global_released=1) ====================
-INSERT INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wish, vd, photos, pn, show_info, coming_title, movie_status, global_released, sort_order) VALUES
+MERGE INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wish, vd, photos, pn, show_info, coming_title, movie_status, global_released, sort_order) KEY(id) VALUES
 (1,  '逐光者',       'The Light Chaser',      'https://picsum.photos/seed/movie1/180/250',  9.2, '张译,吴京,黄渤',     '剧情,科幻',   '中国大陆', 128, '2026-01-15中国大陆上映', '在不远的未来，一位天才物理学家发现了超越光速的秘密，但这个发现将他推入了一个关于时间与命运的漩涡。', 52890, '', '[]', 0, '今天28家影院放映356场',  NULL, 1, 1, 1),
 (2,  '长安幻夜',     'Chang''an Fantasy',     'https://picsum.photos/seed/movie2/180/250',  8.8, '易烊千玺,赵丽颖',    '奇幻,古装',   '中国大陆', 136, '2026-01-20中国大陆上映', '盛唐长安，一场突如其来的妖异事件打破了繁华盛世的宁静，少年剑客与女巫师联手揭开惊天阴谋。', 38920, '', '[]', 0, '今天25家影院放映298场',  NULL, 1, 1, 2),
 (3,  '无声的证人',   'Silent Witness',        'https://picsum.photos/seed/movie3/180/250',  8.5, '朱一龙,倪妮',        '悬疑,犯罪',   '中国大陆', 118, '2026-01-22中国大陆上映', '法医林默在一具尸体上发现了不可思议的线索，随着调查深入，一个横跨十年的连环案浮出水面。', 27650, '', '[]', 0, '今天22家影院放映276场',  NULL, 1, 1, 3),
@@ -31,7 +31,7 @@ INSERT INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wis
 (25, '大话西游之后传', 'Journey West Sequel',  'https://picsum.photos/seed/movie25/180/250', 7.8, '沈腾,马丽',          '喜剧,奇幻',   '中国大陆', 110, '2026-02-03中国大陆上映', '至尊宝在500年后再次醒来，紫霞仙子却已经忘记了一切，一段新的寻爱之旅就此开始。', 43200, '', '[]', 0, '今天28家影院放映350场',  NULL, 1, 1, 25);
 
 -- ==================== 即将上映电影 (movie_status=0, global_released=0) ====================
-INSERT INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wish, vd, photos, pn, show_info, coming_title, movie_status, global_released, sort_order) VALUES
+MERGE INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wish, vd, photos, pn, show_info, coming_title, movie_status, global_released, sort_order) KEY(id) VALUES
 (26, '明日边缘',     'Edge of Tomorrow',      'https://picsum.photos/seed/movie26/180/250', 0, '李现,杨幂',          '科幻,动作',   '中国大陆', 135, '2026年3月15日上映', '一名普通士兵在未来战场上获得了时间循环能力，在无数次"死亡"中成长为拯救世界的英雄。', 67800, '', '[]', 0, NULL, '3月15日 周日', 0, 0, 1),
 (27, '春风化雨',     'Spring Rain',           'https://picsum.photos/seed/movie27/180/250', 0, '黄渤,海清',          '剧情',        '中国大陆', 118, '2026年3月18日上映', '乡村教师用二十年的坚守，改变了一代又一代山村孩子的命运。', 42300, '', '[]', 0, NULL, '3月18日 周三', 0, 0, 2),
 (28, '龙族崛起',     'Rise of Dragons',       'https://picsum.photos/seed/movie28/180/250', 0, '吴京,赵丽颖',        '奇幻,动作',   '中国大陆', 150, '2026年3月20日上映', '远古龙族的最后传人觉醒了沉睡千年的龙血力量，一场人与龙的史诗战争即将爆发。', 78500, '', '[]', 0, NULL, '3月20日 周五', 0, 0, 3),
@@ -55,7 +55,7 @@ INSERT INTO movie (id, nm, enm, img, sc, star, cat, src, dur, pub_desc, dra, wis
 
 
 -- ==================== 城市数据 ====================
-INSERT INTO city (id, nm, py) VALUES
+MERGE INTO city (id, nm, py) KEY(id) VALUES
 (1, '北京', 'beijing'), (2, '上海', 'shanghai'), (3, '广州', 'guangzhou'), (4, '深圳', 'shenzhen'),
 (5, '成都', 'chengdu'), (6, '杭州', 'hangzhou'), (7, '武汉', 'wuhan'), (8, '南京', 'nanjing'),
 (9, '西安', 'xian'), (10, '重庆', 'chongqing'), (11, '长沙', 'changsha'), (12, '天津', 'tianjin'),
@@ -74,7 +74,7 @@ INSERT INTO city (id, nm, py) VALUES
 
 
 -- ==================== 影院品牌 ====================
-INSERT INTO cinema_brand (id, name, count) VALUES
+MERGE INTO cinema_brand (id, name, count) KEY(id) VALUES
 (1, '万达影城', 8), (2, '星美国际', 5), (3, '金逸影城', 4),
 (4, '大地影院', 6), (5, 'CGV影城', 3), (6, '百老汇影城', 2),
 (7, '博纳国际', 4), (8, '中影国际', 3), (9, '横店影城', 5),
@@ -82,7 +82,7 @@ INSERT INTO cinema_brand (id, name, count) VALUES
 
 
 -- ==================== 行政区（北京） ====================
-INSERT INTO district (id, name, city_id, parent_id, count) VALUES
+MERGE INTO district (id, name, city_id, parent_id, count) KEY(id) VALUES
 -- 一级行政区
 (1, '朝阳区', 1, 0, 10), (2, '海淀区', 1, 0, 7), (3, '东城区', 1, 0, 4),
 (4, '西城区', 1, 0, 3), (5, '丰台区', 1, 0, 5), (6, '通州区', 1, 0, 3),
@@ -99,7 +99,7 @@ INSERT INTO district (id, name, city_id, parent_id, count) VALUES
 
 
 -- ==================== 地铁（北京） ====================
-INSERT INTO subway (id, name, city_id, parent_id, count) VALUES
+MERGE INTO subway (id, name, city_id, parent_id, count) KEY(id) VALUES
 -- 线路
 (1, '1号线', 1, 0, 6), (2, '2号线', 1, 0, 4), (3, '10号线', 1, 0, 8),
 (4, '6号线', 1, 0, 3), (5, '14号线', 1, 0, 4),
@@ -116,18 +116,18 @@ INSERT INTO subway (id, name, city_id, parent_id, count) VALUES
 
 
 -- ==================== 服务类型 ====================
-INSERT INTO service_type (id, name, count) VALUES
+MERGE INTO service_type (id, name, count) KEY(id) VALUES
 (1, '退票', 18), (2, '改签', 15), (3, '小吃', 20), (4, '折扣卡', 10);
 
 
 -- ==================== 厅型 ====================
-INSERT INTO hall_type (id, name, count) VALUES
+MERGE INTO hall_type (id, name, count) KEY(id) VALUES
 (1, 'IMAX', 8), (2, '杜比全景声', 6), (3, '4DX', 3),
 (4, '中国巨幕', 5), (5, '激光厅', 10), (6, '杜比影院', 4);
 
 
 -- ==================== 影院数据（北京） ====================
-INSERT INTO cinema (id, nm, addr, city_id, brand_id, district_id, area_id, distance, allow_refund, endorse, snack, vip_tag, hall_types_json, card_promotion_tag, sort_order) VALUES
+MERGE INTO cinema (id, nm, addr, city_id, brand_id, district_id, area_id, distance, allow_refund, endorse, snack, vip_tag, hall_types_json, card_promotion_tag, sort_order) KEY(id) VALUES
 (1,  '万达影城(朝阳大悦城店)',   '北京市朝阳区朝阳北路101号大悦城9层',           1, 1, 1, 101, '1.2km', 1, 1, 1, 'VIP厅',  '["IMAX","杜比全景声"]',  '新客立减10元', 1),
 (2,  '星美国际影城(三里屯店)',   '北京市朝阳区三里屯路19号三里屯太古里南区B1', 1, 2, 1, 102, '2.3km', 1, 0, 1, '',       '["杜比全景声"]',         '会员9折',      2),
 (3,  '金逸影城(望京店)',         '北京市朝阳区望京街9号望京国际商业中心B1层',   1, 3, 1, 103, '3.5km', 1, 1, 1, 'VIP厅',  '["IMAX","4DX"]',         '',             3),
@@ -156,7 +156,7 @@ INSERT INTO cinema (id, nm, addr, city_id, brand_id, district_id, area_id, dista
 
 
 -- ==================== 影院-服务关联 ====================
-INSERT INTO cinema_service_rel (cinema_id, service_id) VALUES
+MERGE INTO cinema_service_rel (cinema_id, service_id) KEY(cinema_id, service_id) VALUES
 (1,1),(1,2),(1,3),(1,4), (2,1),(2,3), (3,1),(3,2),(3,3), (4,1),(4,2),(4,3),(4,4),
 (5,1),(5,2),(5,3),(5,4), (6,1),(6,3), (7,1),(7,2), (8,3),
 (9,1),(9,2),(9,3),(9,4), (10,1),(10,2), (11,1),(11,3), (12,1),(12,2),(12,3),
@@ -167,7 +167,7 @@ INSERT INTO cinema_service_rel (cinema_id, service_id) VALUES
 
 
 -- ==================== 影院-厅型关联 ====================
-INSERT INTO cinema_hall_type_rel (cinema_id, hall_type_id) VALUES
+MERGE INTO cinema_hall_type_rel (cinema_id, hall_type_id) KEY(cinema_id, hall_type_id) VALUES
 (1,1),(1,2), (2,2), (3,1),(3,3), (4,1),(4,3),(4,6),
 (5,1),(5,4), (6,5), (7,2),(7,5), (8,5),
 (9,1),(9,2),(9,4), (10,2),(10,5), (11,2), (12,1),
@@ -178,7 +178,7 @@ INSERT INTO cinema_hall_type_rel (cinema_id, hall_type_id) VALUES
 
 -- ==================== 场次数据（用于防超卖演示） ====================
 -- 为热映电影1-5在影院1-5安排近期场次
-INSERT INTO movie_schedule (id, movie_id, cinema_id, hall_name, show_date, show_time, end_time, lang, total_seats, available_seats, price, status) VALUES
+MERGE INTO movie_schedule (id, movie_id, cinema_id, hall_name, show_date, show_time, end_time, lang, total_seats, available_seats, price, status) KEY(id) VALUES
 (1,  1, 1, 'IMAX厅',    CURRENT_DATE, '10:00', '12:08', '国语',  200, 180, 59.90, 1),
 (2,  1, 1, '杜比全景声厅', CURRENT_DATE, '13:30', '15:38', '国语',  150, 120, 49.90, 1),
 (3,  1, 1, '3号厅',      CURRENT_DATE, '16:00', '18:08', '国语',  100,  85, 39.90, 1),
@@ -225,7 +225,7 @@ INSERT INTO movie_schedule (id, movie_id, cinema_id, hall_name, show_date, show_
 
 
 -- ==================== 影院影厅座位布局 ====================
-INSERT INTO cinema_hall (id, cinema_id, hall_name, seat_rows, seat_cols, aisle_after_col, couple_rows, disabled_seats, hall_type) VALUES
+MERGE INTO cinema_hall (id, cinema_id, hall_name, seat_rows, seat_cols, aisle_after_col, couple_rows, disabled_seats, hall_type) KEY(id) VALUES
 -- 万达影城(朝阳大悦城店)
 (1,  1, 'IMAX厅',       10, 20, '4,16', '10', '[[1,1],[1,20],[10,1],[10,20]]', 'IMAX'),
 (2,  1, '杜比全景声厅',   8, 14, '3,11', '',   '[]', '杜比全景声'),
