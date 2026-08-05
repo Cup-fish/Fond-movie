@@ -23,7 +23,7 @@ export default function TopIntro({ movieDetail }: Props) {
             alt=""
             className="w-full h-full object-cover blur-[30px] scale-125"
           />
-          <div className="absolute inset-0 bg-gray-800/60" />
+          <div className="absolute inset-0 bg-canvas-dark/70" />
         </div>
 
         {/* 海报 */}
@@ -46,7 +46,7 @@ export default function TopIntro({ movieDetail }: Props) {
         </div>
 
         {/* 文字信息 */}
-        <div className="relative z-10 flex-1 mt-8 ml-8 mr-8 space-y-2 text-gray-200 min-w-0">
+        <div className="relative z-10 flex-1 mt-8 ml-8 mr-8 space-y-2 text-white/80 min-w-0">
           <h1 className="text-white text-2xl font-bold">
             {movieDetail.nm}
           </h1>
@@ -56,21 +56,29 @@ export default function TopIntro({ movieDetail }: Props) {
           {movieDetail.globalReleased && movieDetail.sc ? (
             <div className="flex items-baseline gap-2 mt-2">
               <span className="text-white/80 text-sm">观众评分</span>
-              <span className="text-gold text-3xl font-bold">
+              <span
+                className={`font-plex text-3xl font-bold ${
+                  Number(movieDetail.sc) >= 8.5
+                    ? 'text-trading-up'
+                    : Number(movieDetail.sc) < 8
+                      ? 'text-trading-down'
+                      : 'text-primary'
+                }`}
+              >
                 {movieDetail.sc}
               </span>
             </div>
           ) : movieDetail.globalReleased ? (
-            <p className="text-gray-300 text-sm mt-2">暂无评分</p>
+            <p className="text-muted text-sm mt-2">暂无评分</p>
           ) : (
             <p className="mt-2">
-              <span className="text-gold text-lg font-bold">
+              <span className="font-plex text-primary text-lg font-bold">
                 {movieDetail.wish}
               </span>
               <span className="text-white/80 text-sm ml-1">人想看</span>
             </p>
           )}
-          <div className="pt-2 space-y-1.5 text-sm text-gray-300">
+          <div className="pt-2 space-y-1.5 text-sm text-white/70">
             {movieDetail.cat && <p>{movieDetail.cat}</p>}
             {movieDetail.src && (
               <p>
@@ -85,18 +93,18 @@ export default function TopIntro({ movieDetail }: Props) {
       {/* 简介 */}
       {movieDetail.dra && (
         <div
-          className="px-8 py-5 cursor-pointer border-b border-gray-100"
+          className="px-8 py-5 cursor-pointer border-b border-hairline-dark"
           onClick={() => setShowFullIntro(!showFullIntro)}
         >
-          <h3 className="text-base font-medium mb-2">简介</h3>
+          <h3 className="text-base font-medium mb-2 text-body-dark">简介</h3>
           <p
-            className={`text-sm text-gray-600 leading-relaxed ${
+            className={`text-sm text-muted-strong leading-relaxed ${
               !showFullIntro ? 'line-clamp-3' : ''
             }`}
           >
             {movieDetail.dra}
           </p>
-          <div className="flex justify-center mt-2 text-gray-400">
+          <div className="flex justify-center mt-2 text-muted hover:text-primary transition-colors">
             {showFullIntro ? (
               <ChevronUp className="w-4 h-4" />
             ) : (

@@ -10,11 +10,43 @@
     list-style: none;
     -webkit-tap-highlight-color: transparent;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
-    background-color: #fff;
-    color: #333;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    background-color: #0b0e11; /* canvas-dark */
+    color: #eaecef; /* body-dark */
     min-width: 1200px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: #fcd535;
+    color: #181a20;
+  }
+  /* 深色画布上的滚动条 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0b0e11;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2b3139;
+    border-radius: 5px;
+    border: 2px solid #0b0e11;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #707a8a;
+  }
+  /* 焦点环（info-ring） */
+  input:focus-visible,
+  button:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   }
 }
 
@@ -25,4 +57,66 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ===== 数字使用等宽字体（BinancePlex 替代） ===== */
+.font-plex {
+  font-family: var(--font-plex), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 骨架屏 shimmer ===== */
+.skeleton {
+  background: linear-gradient(90deg, #1e2329 25%, #2b3139 50%, #1e2329 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ===== 支付等待扫描时的扫动光效 ===== */
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(252, 213, 53, 0.9), transparent);
+  animation: scan-sweep 2.4s ease-in-out infinite;
+}
+
+/* 卡片悬浮抬升（触觉反馈） */
+.card-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+}
+.card-lift:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* 按钮按压反馈 */
+.pressable {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+/* ===== 减少动态效果偏好 ===== */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .skeleton,
+  .scan-line,
+  .animate-marquee,
+  .animate-pulse-dot,
+  .animate-shimmer,
+  .animate-scan-sweep,
+  .animate-fade-up {
+    animation: none !important;
+  }
+  .card-lift,
+  .pressable {
+    transition: none;
+  }
 }

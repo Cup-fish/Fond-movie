@@ -108,46 +108,46 @@ function CinemaDetailContent() {
   const selectedMovie = movies.find((m) => m.id === selectedMovieId) || null
 
   if (loading) return <Loading />
-  if (!cinemaInfo) return <div className="text-center py-20 text-gray-400">影院不存在</div>
+  if (!cinemaInfo) return <div className="text-center py-20 text-muted">影院不存在</div>
 
   // 服务标签
   const services: { tag: string; desc: string; color: string }[] = []
-  if (cinemaInfo.allowRefund) services.push({ tag: '退', desc: '未取票用户放映前可退票', color: 'orange' })
-  if (cinemaInfo.endorse) services.push({ tag: '改签', desc: '未取票用户放映前可改签', color: 'orange' })
-  if (cinemaInfo.snack) services.push({ tag: '小吃', desc: '提供小吃饮品服务', color: 'blue' })
+  if (cinemaInfo.allowRefund) services.push({ tag: '退', desc: '未取票用户放映前可退票', color: 'blue' })
+  if (cinemaInfo.endorse) services.push({ tag: '改签', desc: '未取票用户放映前可改签', color: 'blue' })
+  if (cinemaInfo.snack) services.push({ tag: '小吃', desc: '提供小吃饮品服务', color: 'primary' })
   cinemaInfo.hallTypes?.forEach((h) => services.push({ tag: h, desc: `${h}影厅`, color: 'blue' }))
 
   return (
-    <div className="min-h-screen bg-white pb-20">
-      {/* 影院信息头部 */}
-      <div className="w-full bg-[#392f59] text-white py-8 min-w-[1200px]">
-        <div className="max-w-[1200px] mx-auto px-4 flex gap-8">
+    <div className="min-h-screen bg-canvas-dark pb-20">
+      {/* 影院信息头部 — 深色 hero 带 */}
+      <div className="w-full bg-gradient-to-b from-surface-elevated to-canvas-dark border-b border-hairline-dark text-white py-8 min-w-[1200px]">
+        <div className="max-w-[1280px] mx-auto px-4 flex gap-8">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <ArrowLeft
-                className="w-6 h-6 cursor-pointer hover:text-gray-300 shrink-0"
+                className="w-6 h-6 cursor-pointer hover:text-primary transition-colors shrink-0"
                 onClick={() => router.back()}
               />
-              <h1 className="text-2xl font-bold">{cinemaInfo.nm}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{cinemaInfo.nm}</h1>
             </div>
-            <p className="text-gray-300 text-sm mb-2">{cinemaInfo.addr}</p>
+            <p className="text-muted-strong text-sm mb-2">{cinemaInfo.addr}</p>
 
             {services.length > 0 && (
               <div className="mt-4">
-                <h3 className="font-bold text-sm mb-2">影院服务</h3>
+                <h3 className="font-semibold text-sm mb-2 text-body-dark">影院服务</h3>
                 <div className="space-y-1.5">
                   {services.map((s, idx) => (
                     <div key={idx} className="flex text-xs items-center">
                       <span
                         className={`border px-1.5 py-0.5 rounded mr-2 ${
-                          s.color === 'orange'
-                            ? 'border-orange-400 text-orange-400'
-                            : 'border-gray-400 text-gray-400'
+                          s.color === 'primary'
+                            ? 'border-primary/50 text-primary'
+                            : 'border-info/50 text-info'
                         }`}
                       >
                         {s.tag}
                       </span>
-                      <span className="text-gray-300">{s.desc}</span>
+                      <span className="text-muted">{s.desc}</span>
                     </div>
                   ))}
                 </div>
@@ -157,23 +157,23 @@ function CinemaDetailContent() {
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 mt-6">
+      <div className="max-w-[1280px] mx-auto px-4 mt-6">
         {/* 面包屑 */}
-        <div className="text-sm text-gray-500 mb-6">
-          <span className="cursor-pointer hover:text-primary" onClick={() => router.push('/')}>
+        <div className="text-sm text-muted mb-6">
+          <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => router.push('/')}>
             猫眼电影
           </span>
           {' > '}
-          <span className="cursor-pointer hover:text-primary" onClick={() => router.back()}>
+          <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => router.back()}>
             影院
           </span>
           {' > '}
-          <span className="text-gray-800">{cinemaInfo.nm}</span>
+          <span className="text-body-dark">{cinemaInfo.nm}</span>
         </div>
 
         {/* 电影横向滑块 */}
         {movies.length > 0 && (
-          <div className="relative w-full bg-gray-50 rounded-lg overflow-hidden mb-6">
+          <div className="relative w-full bg-surface-card border border-hairline-dark rounded-lg overflow-hidden mb-6">
             {/* 背景模糊 */}
             {selectedMovie && (
               <div
@@ -211,16 +211,16 @@ function CinemaDetailContent() {
 
         {/* 选中电影信息 */}
         {selectedMovie && (
-          <div className="text-center border-b border-gray-200 pb-6 mb-6">
+          <div className="text-center border-b border-hairline-dark pb-6 mb-6">
             <div className="flex items-center justify-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold text-gray-800">{selectedMovie.nm}</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-body-dark">{selectedMovie.nm}</h2>
               {selectedMovie.sc && Number(selectedMovie.sc) > 0 && (
-                <span className="text-[#ff9900] text-xl font-bold">
+                <span className={`font-plex text-xl font-bold ${Number(selectedMovie.sc) >= 8.5 ? 'text-trading-up' : 'text-trading-down'}`}>
                   {Number(selectedMovie.sc).toFixed(1)}分
                 </span>
               )}
             </div>
-            <div className="text-sm text-gray-500 space-x-4">
+            <div className="text-sm text-muted space-x-4">
               {selectedMovie.cat && <span>类型：{selectedMovie.cat}</span>}
               {selectedMovie.dur && <span>时长：{selectedMovie.dur}分钟</span>}
               {selectedMovie.star && <span>主演：{selectedMovie.star}</span>}
@@ -230,7 +230,7 @@ function CinemaDetailContent() {
 
         {/* 日期选择 */}
         {dates.length > 0 && (
-          <div className="flex gap-6 mb-6 border-b border-gray-100">
+          <div className="flex gap-6 mb-6 border-b border-hairline-dark">
             {dates.map((d) => (
               <button
                 key={d}
@@ -238,7 +238,7 @@ function CinemaDetailContent() {
                 className={`pb-2 border-b-2 text-sm transition-colors ${
                   d === activeDate
                     ? 'border-primary text-primary font-medium'
-                    : 'border-transparent text-gray-600 hover:text-primary'
+                    : 'border-transparent text-muted-strong hover:text-primary'
                 }`}
               >
                 {formatDateLabel(d)}
@@ -247,17 +247,17 @@ function CinemaDetailContent() {
           </div>
         )}
 
-        {/* 排片表格 */}
+        {/* 排片表格 — markets-table 风格 */}
         {scheduleLoading ? (
           <Loading />
         ) : schedules.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-muted">
             {movies.length === 0 ? '该影院暂无排片' : '当日暂无排片'}
           </div>
         ) : (
-          <div className="w-full">
+          <div className="w-full bg-surface-card border border-hairline-dark rounded-xl overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 h-12 text-gray-500 font-normal text-sm">
+              <thead className="bg-surface-elevated/50 h-12 text-muted font-normal text-sm">
                 <tr>
                   <th className="text-left pl-8 w-[18%]">放映时间</th>
                   <th className="text-left w-[15%]">语言版本</th>
@@ -270,19 +270,21 @@ function CinemaDetailContent() {
                 {schedules.map((item, idx) => (
                   <tr
                     key={item.id}
-                    className={`h-20 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#f9f9f9]'}`}
+                    className={`h-20 transition-colors hover:bg-surface-elevated/40 ${
+                      idx % 2 === 0 ? 'bg-transparent' : 'bg-surface-elevated/20'
+                    }`}
                   >
                     <td className="pl-8">
-                      <div className="text-xl font-bold text-gray-900">{item.showTime}</div>
-                      <div className="text-xs text-gray-400">{item.endTime}散场</div>
+                      <div className="text-xl font-bold text-body-dark">{item.showTime}</div>
+                      <div className="font-plex text-xs text-muted">{item.endTime}散场</div>
                     </td>
-                    <td className="text-gray-700">{item.lang}</td>
-                    <td className="text-gray-700">{item.hallName}</td>
-                    <td className="text-primary font-bold text-lg">¥{item.price}</td>
+                    <td className="text-muted-strong">{item.lang}</td>
+                    <td className="text-muted-strong">{item.hallName}</td>
+                    <td className="font-plex text-primary font-bold text-lg">¥{item.price}</td>
                     <td className="text-right pr-8">
                       <button
                         onClick={() => handleSelectSchedule(item)}
-                        className="bg-white border border-primary text-primary hover:bg-primary hover:text-white transition rounded-full px-6 py-1.5 text-sm font-medium shadow-sm"
+                        className="border border-primary text-primary hover:bg-primary hover:text-on-primary transition rounded-md px-6 py-2 text-sm font-medium pressable"
                       >
                         选座购票
                       </button>

@@ -68,14 +68,14 @@ export default function MoviesTab() {
   return (
     <div>
       {/* Sub Navigation */}
-      <div className="bg-[#47464a] h-[60px] flex items-center justify-center mb-8 -mx-[calc((100vw-1200px)/2)] min-w-[1200px]">
+      <div className="bg-surface-elevated/70 h-[60px] flex items-center justify-center mb-8 -mx-[calc((100vw-1280px)/2)] min-w-[1200px] border-b border-hairline-dark">
         <div className="flex space-x-12">
           <button
             onClick={() => { setSubTab('playing'); setPage(1) }}
             className={`h-[60px] px-2 font-medium ${
               subTab === 'playing'
                 ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-300 hover:text-white transition-colors'
+                : 'text-muted-strong hover:text-body-dark transition-colors'
             }`}
           >
             正在热映
@@ -85,7 +85,7 @@ export default function MoviesTab() {
             className={`h-[60px] px-2 font-medium ${
               subTab === 'coming'
                 ? 'text-primary border-b-2 border-primary'
-                : 'text-gray-300 hover:text-white transition-colors'
+                : 'text-muted-strong hover:text-body-dark transition-colors'
             }`}
           >
             即将上映
@@ -94,7 +94,7 @@ export default function MoviesTab() {
       </div>
 
       {/* Filters */}
-      <div className="mb-8 space-y-4 border border-gray-200 p-4 rounded-sm text-sm text-gray-600">
+      <div className="mb-8 space-y-4 border border-hairline-dark bg-surface-card p-4 rounded-lg text-sm text-muted-strong">
         <FilterRow
           label="类型："
           options={GENRES}
@@ -117,19 +117,19 @@ export default function MoviesTab() {
 
       {/* Sort Bar + Total */}
       <div className="flex items-center justify-between mb-6 mt-10">
-        <div className="flex space-x-6 text-sm text-gray-500">
+        <div className="flex space-x-6 text-sm text-muted-strong">
           <SortRadio label="按热门排序" active={sortType === 'hot'} onClick={() => setSortType('hot')} />
           <SortRadio label="按时间排序" active={sortType === 'time'} onClick={() => setSortType('time')} />
           <SortRadio label="按评价排序" active={sortType === 'rating'} onClick={() => setSortType('rating')} />
         </div>
-        <span className="text-sm text-gray-400">共 {total} 部</span>
+        <span className="text-sm font-plex text-muted">共 {total} 部</span>
       </div>
 
       {/* Grid */}
       {loading && movies.length === 0 ? (
         <Loading />
       ) : movies.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">暂无相关电影</div>
+        <div className="text-center py-20 text-muted">暂无相关电影</div>
       ) : (
         <>
           <div className="grid grid-cols-6 gap-x-8 gap-y-10">
@@ -141,17 +141,17 @@ export default function MoviesTab() {
               >
                 <MovieCard movie={movie} showButton={false} />
                 <div className="text-center w-full mt-[-20px]">
-                  <h3 className="truncate font-medium text-gray-800 text-[16px] mb-1">
+                  <h3 className="truncate font-medium text-body-dark text-[16px] mb-1">
                     {movie.nm}
                   </h3>
                   {movie.globalReleased && movie.sc ? (
-                    <div className="text-gold text-sm italic">
+                    <div className={`font-plex text-sm ${Number(movie.sc) >= 8.5 ? 'text-trading-up' : Number(movie.sc) < 8 ? 'text-trading-down' : 'text-muted-strong'}`}>
                       {Number(movie.sc).toFixed(1)}
                     </div>
                   ) : movie.globalReleased ? (
-                    <div className="text-gray-400 text-sm">暂无评分</div>
+                    <div className="text-muted text-sm">暂无评分</div>
                   ) : (
-                    <div className="text-gold text-sm">{movie.wish}人想看</div>
+                    <div className="font-plex text-primary text-sm">{movie.wish}人想看</div>
                   )}
                 </div>
               </div>
@@ -164,7 +164,7 @@ export default function MoviesTab() {
               <button
                 onClick={handleLoadMore}
                 disabled={loading}
-                className="px-8 py-2 border border-gray-300 text-gray-500 rounded-full hover:bg-gray-50 transition-colors text-sm"
+                className="px-8 py-2.5 border border-hairline-dark text-muted-strong rounded-md hover:bg-surface-elevated hover:text-body-dark hover:border-primary/50 transition-all pressable text-sm"
               >
                 {loading ? '加载中...' : '加载更多'}
               </button>
@@ -189,15 +189,15 @@ function FilterRow({
 }) {
   return (
     <div className="flex items-start">
-      <span className="w-16 text-gray-400">{label}</span>
+      <span className="w-16 text-muted">{label}</span>
       <div className="flex flex-wrap gap-4 flex-1">
         {options.map((opt) => (
           <span
             key={opt}
             onClick={() => onSelect(opt)}
-            className={`cursor-pointer ${
+            className={`cursor-pointer transition-all pressable ${
               opt === active
-                ? 'bg-primary text-white px-2 rounded-xl'
+                ? 'bg-primary text-on-primary px-2.5 py-0.5 rounded-md font-medium'
                 : 'hover:text-primary'
             }`}
           >
@@ -219,11 +219,11 @@ function SortRadio({
   onClick: () => void
 }) {
   return (
-    <div className="flex items-center space-x-1 cursor-pointer" onClick={onClick}>
-      <div className="w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center">
-        {active && <div className="w-2 h-2 bg-primary rounded-full" />}
+    <div className="flex items-center space-x-1.5 cursor-pointer group" onClick={onClick}>
+      <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${active ? 'border-primary' : 'border-hairline-dark'}`}>
+        {active && <div className="w-2 h-2 bg-primary rounded-full animate-pulse-dot" />}
       </div>
-      <span className={active ? 'text-black' : ''}>{label}</span>
+      <span className={`transition-colors ${active ? 'text-primary' : 'group-hover:text-body-dark'}`}>{label}</span>
     </div>
   )
 }

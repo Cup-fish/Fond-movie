@@ -137,11 +137,23 @@ const api = {
   getUserOrders: (params: { page?: number; size?: number }) =>
     authInstance.get('/order/list', { params }).then((res) => res.data),
 
-  // ==================== 支付相关 ====================
+  // ==================== 支付相关（扫码支付） ====================
 
-  /** 模拟支付 */
-  payOrder: (params: { orderNo: string }) =>
-    authInstance.post('/payment/pay', null, { params }).then((res) => res.data),
+  /** 创建支付单（幂等），返回支付单号 */
+  createPayment: (params: { orderNo: string }) =>
+    authInstance.post('/payment/create', null, { params }).then((res) => res.data),
+
+  /** 支付状态轮询（每 3s 调用） */
+  getPaymentStatus: (params: { orderNo: string }) =>
+    authInstance.get('/payment/status', { params }).then((res) => res.data),
+
+  /** 模拟支付网关回调（无用户态，收银台「确认付款」触发） */
+  mockNotify: (data: { orderNo: string; sign?: string }) =>
+    axios.post('/api/payment/mock/notify', data).then((res) => res.data),
+
+  /** 收银台订单摘要（无用户态） */
+  getMockOrderInfo: (params: { orderNo: string }) =>
+    axios.get('/api/payment/mock/order-info', { params }).then((res) => res.data),
 
   /** 查询订单详情 */
   getOrderDetail: (params: { orderNo: string }) =>

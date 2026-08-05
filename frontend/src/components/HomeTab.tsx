@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, TrendingUp } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
 import MovieCard from '@/components/MovieCard'
 import Loading from '@/components/Loading'
+import Reveal from '@/components/motion/Reveal'
+import CountUp from '@/components/motion/CountUp'
 import api from '@/lib/api'
 import type { MovieItem, BoxOfficeItem } from '@/types'
 
@@ -26,6 +29,7 @@ export default function HomeTab() {
   const [hotMovies, setHotMovies] = useState<MovieItem[]>([])
   const [comingMovies, setComingMovies] = useState<MovieItem[]>([])
   const [loading, setLoading] = useState(true)
+  const reduce = useReducedMotion()
 
   // 硬编码的票房数据 (可以后续接真实接口)
   const boxOffice: BoxOfficeItem[] = [
@@ -58,249 +62,265 @@ export default function HomeTab() {
       {/* LEFT COLUMN: Movies */}
       <div className="flex-1">
         {/* 正在热映 */}
-        <div className="mb-12">
+        <Reveal>
           <div className="flex justify-between items-end mb-6">
-            <h2 className="text-2xl text-primary font-normal">
+            <h2 className="text-2xl font-semibold tracking-tight text-body-dark">
               正在热映{' '}
-              <span className="text-2xl text-primary ml-1">
-                （{hotMovies.length}部）
+              <span className="font-plex text-primary text-xl ml-1">
+                {hotMovies.length}
               </span>
             </h2>
             <a className="flex items-center text-primary hover:underline text-sm cursor-pointer">
               全部 <ChevronRight size={14} />
             </a>
           </div>
+        </Reveal>
 
-          <div className="grid grid-cols-4 gap-6">
-            {hotMovies.map((movie) => (
-              <div key={movie.id} className="flex flex-col items-center">
-                <MovieCard movie={movie} showButton={false} />
-                <button
-                  onClick={() => router.push(`/movie-detail?movieId=${movie.id}`)}
-                  className="w-full max-w-[160px] py-1 text-primary bg-white border border-gray-200 shadow-sm rounded-full hover:bg-primary hover:text-white transition-colors text-sm -mt-2"
-                >
-                  购票
-                </button>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-4 gap-6">
+          {hotMovies.map((movie, i) => (
+            <div key={movie.id} className="flex flex-col items-center">
+              <MovieCard movie={movie} showButton={false} index={i} />
+              <button
+                onClick={() => router.push(`/movie-detail?movieId=${movie.id}`)}
+                className="w-full max-w-[160px] py-2 bg-primary text-on-primary border border-white rounded-md hover:bg-primary-active transition-all pressable text-sm font-bold -mt-2"
+              >
+                购票
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* 即将上映 */}
-        <div>
-          <div className="flex justify-between items-end mb-6 border-b border-gray-100 pb-2">
-            <h2 className="text-2xl text-secondary font-normal">
+        <Reveal delay={0.1}>
+          <div className="flex justify-between items-end mb-6 mt-4">
+            <h2 className="text-2xl font-semibold tracking-tight text-body-dark">
               即将上映{' '}
-              <span className="text-2xl text-secondary ml-1">
-                （{comingMovies.length}部）
+              <span className="font-plex text-primary text-xl ml-1">
+                {comingMovies.length}
               </span>
             </h2>
-            <a className="flex items-center text-secondary hover:underline text-sm cursor-pointer">
+            <a className="flex items-center text-primary hover:underline text-sm cursor-pointer">
               全部 <ChevronRight size={14} />
             </a>
           </div>
+        </Reveal>
 
-          <div className="grid grid-cols-4 gap-6">
-            {comingMovies.map((movie) => (
-              <div key={movie.id} className="flex flex-col items-center">
-                <MovieCard movie={movie} showButton={true} />
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-4 gap-6">
+          {comingMovies.map((movie, i) => (
+            <div key={movie.id} className="flex flex-col items-center">
+              <MovieCard movie={movie} showButton={true} index={i} />
+            </div>
+          ))}
         </div>
       </div>
 
       {/* RIGHT COLUMN: Sidebar */}
       <div className="w-[360px] shrink-0">
-        {/* 今日票房 */}
-        <div className="mb-10">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl text-primary">今日票房</h3>
-          </div>
+        {/* 今日票房 — markets-table-card 风格 */}
+        <Reveal>
+          <div className="mb-10">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-body-dark flex items-center gap-2">
+                <TrendingUp size={16} className="text-trading-up" />
+                今日票房
+              </h3>
+            </div>
 
-          <div className="bg-[#fdfdfd] border border-gray-100 p-4 shadow-sm">
-            {/* Top 1 */}
-            <div className="flex gap-3 mb-4 bg-gray-50 p-2 border border-gray-100 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-6 h-6 bg-primary text-white flex items-center justify-center text-xs font-bold z-10">
+            {/* 黄黑撞色盒子：黄底 + 黑字 + 白描边（无 glow，DESIGN.md 禁大气光效） */}
+            <div className="bg-primary border border-white rounded-xl p-4">
+              {/* Top 1 — 黑底高亮行（黄字数字） */}
+              <div className="flex gap-3 mb-4 bg-ink p-2.5 rounded-lg border border-ink relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-6 h-6 bg-primary text-on-primary flex items-center justify-center text-xs font-bold z-10 rounded-br-md">
+                  1
+                </div>
+                <img
+                  src={`https://picsum.photos/seed/box1/60/80`}
+                  alt=""
+                  className="w-14 h-[72px] object-cover rounded-md border border-white/20"
+                />
+                <div className="flex flex-col justify-center flex-1">
+                  <h4 className="font-semibold text-white">
+                    {boxOffice[0].title}
+                  </h4>
+                  <p className="font-plex text-primary text-base font-bold mt-1.5">
+                    {boxOffice[0].amount.toLocaleString()}
+                    <span className="text-xs ml-0.5">{boxOffice[0].unit}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* List 2-5 — 黄底黑字 */}
+              <ul className="space-y-3">
+                {boxOffice.slice(1).map((item, idx) => (
+                  <li
+                    key={item.id}
+                    className="flex justify-between items-center text-sm"
+                  >
+                    <div className="flex items-center flex-1 overflow-hidden">
+                      <span className="font-plex text-on-primary/70 font-bold mr-3 w-3 text-right">
+                        {idx + 2}
+                      </span>
+                      <span className="truncate font-semibold text-on-primary">{item.title}</span>
+                    </div>
+                    <span className="font-plex font-bold text-on-primary text-xs">
+                      {item.amount.toLocaleString()}
+                      {item.unit}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Total Box Office — stat-callout 黄色大数字 */}
+            <div className="mt-4 bg-surface-elevated border border-hairline-dark rounded-xl p-4 flex justify-between items-center">
+              <div>
+                <div className="flex items-end">
+                  <CountUp
+                    value={10273.5}
+                    className="text-3xl font-bold text-primary"
+                  />
+                  <span className="text-sm mb-1 ml-1 text-primary">万</span>
+                </div>
+                <div className="text-[10px] text-muted mt-1.5 font-plex tracking-wide">
+                  猫眼专业版实时票房数据
+                </div>
+              </div>
+              <div className="text-xs text-muted-strong flex items-center cursor-pointer hover:text-primary transition-colors">
+                查看更多 <ChevronRight size={12} />
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* 最受期待 */}
+        <Reveal delay={0.05}>
+          <div className="mb-10">
+            <div className="flex justify-between items-end mb-4">
+              <h3 className="text-lg font-semibold text-body-dark">最受期待</h3>
+              <a className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
+                查看完整榜单 <ChevronRight size={12} />
+              </a>
+            </div>
+
+            {/* Top 1 Large — 黄底盒子 + 黑底序号 */}
+            {comingMovies[0] && (
+              <div
+                className="mb-4 rounded-xl border border-white bg-primary overflow-hidden group cursor-pointer card-lift"
+                onClick={() => router.push(`/movie-detail?movieId=${comingMovies[0].id}`)}
+              >
+                <div className="w-full h-44 overflow-hidden relative">
+                  <img
+                    src={comingMovies[0].img}
+                    className="w-full object-cover -mt-8 group-hover:scale-105 transition-transform duration-500"
+                    alt="Top1"
+                  />
+                  <div className="absolute top-2 left-2 bg-ink text-primary w-6 h-6 flex items-center justify-center font-bold rounded-md text-sm border border-white/30">
+                    1
+                  </div>
+                  <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/85 to-transparent p-3">
+                    <div className="font-semibold text-white">{comingMovies[0].nm}</div>
+                    <div className="text-xs text-white/60 mt-0.5">
+                      {comingMovies[0].comingTitle || comingMovies[0].pubDesc}
+                    </div>
+                    <div className="font-plex text-xs text-primary font-bold mt-1">
+                      {comingMovies[0].wish}人想看
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Row of 2 & 3 — 黄底卡片黑字 */}
+            {comingMovies.length >= 3 && (
+              <div className="flex gap-3 mb-4">
+                {[comingMovies[1], comingMovies[2]].map((m, idx) => (
+                  <div
+                    key={m.id}
+                    className="flex-1 cursor-pointer card-lift"
+                    onClick={() => router.push(`/movie-detail?movieId=${m.id}`)}
+                  >
+                    <div className="w-full h-28 overflow-hidden relative rounded-lg border border-white bg-primary">
+                      <img
+                        src={m.img}
+                        className="w-full h-full object-cover"
+                        alt=""
+                      />
+                      <div className="absolute top-1.5 left-1.5 bg-ink text-primary w-5 h-5 flex items-center justify-center text-xs font-bold rounded border border-white/30">
+                        {idx + 2}
+                      </div>
+                    </div>
+                    <div className="mt-1.5 px-0.5">
+                      <h4 className="font-semibold text-sm text-body-dark truncate">{m.nm}</h4>
+                      <p className="font-plex text-xs font-bold text-primary mt-0.5">{m.wish}人想看</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* List 4-8 */}
+            <ul className="space-y-4">
+              {comingMovies.slice(3).map((m, idx) => (
+                <li
+                  key={m.id}
+                  className="flex justify-between items-center text-sm cursor-pointer group"
+                  onClick={() => router.push(`/movie-detail?movieId=${m.id}`)}
+                >
+                  <div className="flex items-center">
+                    <span className="font-plex text-muted mr-3 w-3 text-right">{idx + 4}</span>
+                    <span className="text-muted-strong group-hover:text-body-dark transition-colors">{m.nm}</span>
+                  </div>
+                  <span className="font-plex text-primary text-xs">{m.wish}人想看</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+
+        {/* TOP 100 */}
+        <Reveal delay={0.1}>
+          <div className="mb-10">
+            <div className="flex justify-between items-end mb-4">
+              <h3 className="text-lg font-semibold text-body-dark">TOP 100</h3>
+              <a className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
+                查看完整榜单 <ChevronRight size={12} />
+              </a>
+            </div>
+
+            {/* Top 1 — 黄底黑字 + 黑底序号 */}
+            <div className="flex gap-3 mb-4 bg-primary p-2.5 rounded-lg border border-white relative cursor-pointer card-lift">
+              <div className="absolute top-0 left-0 w-6 h-6 bg-ink text-primary flex items-center justify-center text-xs font-bold z-10 rounded-br-md border border-white/30">
                 1
               </div>
               <img
-                src="https://placehold.co/60x80?text=1"
+                src="https://picsum.photos/seed/top100/60/80"
                 alt=""
-                className="w-16 h-20 object-cover"
+                className="w-14 h-[72px] object-cover rounded-md border border-on-primary/20"
               />
               <div className="flex flex-col justify-center flex-1">
-                <h4 className="font-bold text-gray-800">
-                  {boxOffice[0].title}
-                </h4>
-                <p className="text-primary text-sm mt-2 font-bold">
-                  {boxOffice[0].amount}
-                  {boxOffice[0].unit}
-                </p>
+                <h4 className="font-semibold text-on-primary">{TOP100[0].title}</h4>
+                <p className="font-plex font-bold text-on-primary text-xl mt-1">{TOP100[0].score}分</p>
               </div>
             </div>
 
-            {/* List 2-5 */}
-            <ul className="space-y-3">
-              {boxOffice.slice(1).map((item, idx) => (
+            <ul className="space-y-3.5">
+              {TOP100.slice(1).map((m) => (
                 <li
-                  key={item.id}
-                  className="flex justify-between items-center text-sm"
+                  key={m.id}
+                  className="flex justify-between items-center text-sm group cursor-pointer"
                 >
-                  <div className="flex items-center flex-1 overflow-hidden">
-                    <span className="text-gray-400 italic mr-3 w-3">
-                      {idx + 2}
-                    </span>
-                    <span className="truncate text-gray-700">{item.title}</span>
+                  <div className="flex items-center">
+                    <span className="font-plex text-muted mr-3 w-3 text-right">{m.id}</span>
+                    <span className="text-muted-strong group-hover:text-body-dark transition-colors">{m.title}</span>
                   </div>
-                  <span className="text-primary text-xs">
-                    {item.amount}
-                    {item.unit}
+                  <span className="font-plex text-primary text-xs font-semibold">
+                    {m.score}分
                   </span>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* Total Box Office */}
-          <div className="mt-4 bg-primary text-white p-4 flex justify-between items-center shadow-md">
-            <div>
-              <div className="flex items-end">
-                <span className="text-3xl font-bold">10273.5</span>
-                <span className="text-sm mb-1 ml-1">万</span>
-              </div>
-              <div className="text-[10px] opacity-80 mt-1">
-                北京时间 21:54:06{' '}
-                <span className="ml-2">猫眼专业版实时票房数据</span>
-              </div>
-            </div>
-            <div className="text-xs flex items-center cursor-pointer hover:opacity-80">
-              查看更多 <ChevronRight size={12} />
-            </div>
-          </div>
-        </div>
-
-        {/* 最受期待 */}
-        <div className="mb-10">
-          <div className="flex justify-between items-end mb-4">
-            <h3 className="text-xl text-gold">最受期待</h3>
-            <a className="flex items-center text-gold hover:underline text-xs cursor-pointer">
-              查看完整榜单 <ChevronRight size={12} />
-            </a>
-          </div>
-
-          {/* Top 1 Large */}
-          {comingMovies[0] && (
-            <div className="mb-4 bg-white border border-gray-100 p-0 relative group cursor-pointer overflow-hidden">
-              <div className="w-full h-40 overflow-hidden relative">
-                <img
-                  src={comingMovies[0].img}
-                  className="w-full object-cover -mt-10"
-                  alt="Top1"
-                />
-                <div className="absolute top-0 left-2 bg-gold text-white w-6 h-6 flex items-center justify-center font-bold shadow-md text-sm">
-                  1
-                </div>
-                <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/70 to-transparent p-2 text-white">
-                  <div className="font-bold">{comingMovies[0].nm}</div>
-                  <div className="text-xs text-gray-200">
-                    上映时间：{comingMovies[0].comingTitle || comingMovies[0].pubDesc}
-                  </div>
-                  <div className="text-xs text-gold">
-                    {comingMovies[0].wish}人想看
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Row of 2 & 3 */}
-          {comingMovies.length >= 3 && (
-            <div className="flex gap-3 mb-4">
-              {[comingMovies[1], comingMovies[2]].map((m, idx) => (
-                <div key={m.id} className="flex-1 relative cursor-pointer">
-                  <div className="w-full h-28 overflow-hidden relative bg-gray-100">
-                    <img
-                      src={m.img}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
-                    <div className="absolute top-0 left-0 bg-gold text-white w-5 h-5 flex items-center justify-center text-xs font-bold shadow">
-                      {idx + 2}
-                    </div>
-                  </div>
-                  <div className="mt-1">
-                    <h4 className="font-bold text-sm truncate">{m.nm}</h4>
-                    <p className="text-xs text-gold">{m.wish}人想看</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* List 4-8 */}
-          <ul className="space-y-4">
-            {comingMovies.slice(3).map((m, idx) => (
-              <li
-                key={m.id}
-                className="flex justify-between items-center text-sm"
-              >
-                <div className="flex items-center">
-                  <span className="text-gray-400 italic mr-3 w-3">
-                    {idx + 4}
-                  </span>
-                  <span className="text-gray-600">{m.nm}</span>
-                </div>
-                <span className="text-gold text-xs">{m.wish}人想看</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* TOP 100 */}
-        <div className="mb-10">
-          <div className="flex justify-between items-end mb-4">
-            <h3 className="text-xl text-gold">TOP 100</h3>
-            <a className="flex items-center text-gold hover:underline text-xs cursor-pointer">
-              查看完整榜单 <ChevronRight size={12} />
-            </a>
-          </div>
-
-          {/* Top 1 */}
-          <div className="flex gap-3 mb-4 bg-gray-50 p-2 border border-gray-100 relative cursor-pointer">
-            <div className="absolute top-0 left-0 w-6 h-6 bg-gold text-white flex items-center justify-center text-xs font-bold z-10">
-              1
-            </div>
-            <img
-              src="https://placehold.co/60x80?text=TOP1"
-              alt=""
-              className="w-16 h-20 object-cover"
-            />
-            <div className="flex flex-col justify-center flex-1">
-              <h4 className="font-bold text-gray-800">{TOP100[0].title}</h4>
-              <p className="text-gold text-xl font-bold italic mt-2">
-                {TOP100[0].score}分
-              </p>
-            </div>
-          </div>
-
-          <ul className="space-y-4">
-            {TOP100.slice(1).map((m) => (
-              <li
-                key={m.id}
-                className="flex justify-between items-center text-sm"
-              >
-                <div className="flex items-center">
-                  <span className="text-gray-400 italic mr-3 w-3">{m.id}</span>
-                  <span className="text-gray-600">{m.title}</span>
-                </div>
-                <span className="text-gold text-xs font-bold italic">
-                  {m.score}分
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        </Reveal>
       </div>
     </div>
   )

@@ -63,49 +63,52 @@ export default function QueueWaiting({
   }, [estimatedWait])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-10 max-w-md w-full text-center">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-          <Users className="w-10 h-10 text-primary" />
+    <div className="min-h-screen bg-canvas-dark flex items-center justify-center">
+      <div className="bg-surface-card border border-hairline-dark rounded-xl shadow-card-dark p-10 max-w-md w-full text-center">
+        <div className="relative w-20 h-20 mx-auto mb-6">
+          <div className="absolute inset-0 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="w-10 h-10 text-primary" />
+          </div>
+          <div className="absolute inset-0 rounded-full border-2 border-primary/30 border-t-primary animate-spin" style={{ animationDuration: '2s' }} />
         </div>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
+        <h2 className="text-xl font-bold text-body-dark mb-2">
           排队等候中
         </h2>
-        <p className="text-gray-500 text-sm mb-8">
+        <p className="text-muted-strong text-sm mb-8">
           当前场次购票人数较多，已开启排队模式，请耐心等候
         </p>
 
         {/* 排队位置 */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-6">
-          <div className="text-4xl font-bold text-primary mb-1">
+        <div className="bg-surface-elevated border border-hairline-dark rounded-lg p-6 mb-6">
+          <div className="font-plex text-5xl font-bold text-primary mb-1 animate-pulse-dot">
             {position}
           </div>
-          <div className="text-sm text-gray-500">当前排队位置</div>
+          <div className="text-sm text-muted">当前排队位置</div>
         </div>
 
         {/* 预估等待 */}
-        <div className="flex items-center justify-center gap-2 text-gray-600 mb-8">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">预计等待 {formatWait(secondsLeft)}</span>
+        <div className="flex items-center justify-center gap-2 text-muted-strong mb-8">
+          <Clock className="w-4 h-4 text-primary" />
+          <span className="text-sm">预计等待 <span className="font-plex text-primary">{formatWait(secondsLeft)}</span></span>
         </div>
 
         {/* 进度条 */}
-        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-8">
+        <div className="w-full bg-surface-elevated rounded-full h-1.5 mb-8">
           <div
             className="bg-primary h-1.5 rounded-full transition-all duration-1000"
             style={{ width: `${Math.max(5, Math.min(100, (1 / position) * 100))}%` }}
           />
         </div>
 
-        <p className="text-xs text-gray-400 mb-6">
+        <p className="text-xs text-muted mb-6">
           请不要关闭页面，入场后将自动进入选座界面<br />
           页面刷新排队位置不变
         </p>
 
         <button
           onClick={onLeave}
-          className="text-sm text-gray-400 hover:text-gray-600 underline"
+          className="text-sm text-muted hover:text-body-dark underline transition-colors"
         >
           放弃排队，返回上一页
         </button>

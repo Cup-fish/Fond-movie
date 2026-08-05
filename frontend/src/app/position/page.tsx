@@ -58,21 +58,21 @@ export default function PositionPage() {
   if (loading) return <Loading />
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas-dark">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 min-w-[1200px]">
-        <div className="max-w-[1200px] mx-auto h-[60px] flex items-center gap-4">
+      <div className="bg-surface-card border-b border-hairline-dark min-w-[1200px]">
+        <div className="max-w-[1280px] mx-auto h-[60px] flex items-center gap-4 px-4">
           <ArrowLeft
-            className="w-6 h-6 text-gray-500 cursor-pointer hover:text-primary"
+            className="w-6 h-6 text-muted cursor-pointer hover:text-primary transition-colors"
             onClick={() => router.push('/')}
           />
-          <h1 className="text-lg font-medium">选择城市</h1>
+          <h1 className="text-lg font-medium text-body-dark">选择城市</h1>
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto mt-6 flex gap-4">
+      <div className="max-w-[1280px] mx-auto mt-6 flex gap-4 px-4">
         {/* City list */}
-        <div className="flex-1 bg-white rounded shadow-sm max-h-[70vh] overflow-y-auto">
+        <div className="flex-1 bg-surface-card border border-hairline-dark rounded-lg shadow-card-dark max-h-[70vh] overflow-y-auto">
           {cityList.map((group) => (
             <div
               key={group.tag}
@@ -80,14 +80,14 @@ export default function PositionPage() {
                 if (el) tagRefs.current.set(group.tag, el)
               }}
             >
-              <div className="sticky top-0 bg-gray-100 px-6 py-2 text-sm text-gray-500 font-medium uppercase">
+              <div className="sticky top-0 bg-surface-elevated px-6 py-2 text-sm text-muted font-medium uppercase">
                 {group.tag}
               </div>
               <div className="grid grid-cols-4 gap-2 px-6 py-2">
                 {group.items.map((city) => (
                   <div
                     key={city.id}
-                    className="px-4 py-2 text-sm cursor-pointer hover:text-primary hover:bg-gray-50 rounded"
+                    className="px-4 py-2 text-sm cursor-pointer text-muted-strong hover:text-primary hover:bg-surface-elevated/50 rounded transition-colors"
                     onClick={() => chooseCity(city.nm, city.id)}
                   >
                     {city.nm}
@@ -99,12 +99,12 @@ export default function PositionPage() {
         </div>
 
         {/* Right quick nav */}
-        <div className="w-8 flex flex-col items-center justify-center py-2 bg-white rounded shadow-sm sticky top-[80px] self-start">
+        <div className="w-8 flex flex-col items-center justify-center py-2 bg-surface-card border border-hairline-dark rounded-lg shadow-card-dark sticky top-[80px] self-start">
           {quickNavTags.map((tag) => (
             <div
               key={tag}
               className={`text-xs py-0.5 cursor-pointer uppercase ${
-                tag === activeTag ? 'text-primary font-bold' : 'text-gray-400'
+                tag === activeTag ? 'text-primary font-bold' : 'text-muted'
               }`}
               onClick={() => scrollToTag(tag)}
             >

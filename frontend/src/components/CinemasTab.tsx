@@ -25,8 +25,8 @@ function FilterRow({
   onSelect?: (v: string) => void
 }) {
   return (
-    <div className="flex items-start py-3 border-b border-dashed border-gray-200 last:border-0">
-      <span className="text-gray-400 w-20 text-sm shrink-0 mt-0.5">
+    <div className="flex items-start py-3 border-b border-dashed border-hairline-dark last:border-0">
+      <span className="text-muted w-20 text-sm shrink-0 mt-0.5">
         {label}
       </span>
       <div className="flex flex-wrap gap-3">
@@ -34,10 +34,10 @@ function FilterRow({
           <span
             key={opt}
             onClick={() => onSelect?.(opt)}
-            className={`px-3 py-0.5 text-sm rounded-full cursor-pointer transition-colors ${
+            className={`px-3 py-0.5 text-sm rounded-full cursor-pointer transition-all pressable ${
               opt === active
-                ? 'bg-primary text-white'
-                : 'text-gray-700 hover:text-primary'
+                ? 'bg-primary text-on-primary font-medium'
+                : 'text-muted-strong hover:text-primary'
             }`}
           >
             {opt}
@@ -95,7 +95,7 @@ export default function CinemasTab() {
   return (
     <div>
       {/* Filters */}
-      <div className="border border-gray-200 bg-white p-5 mb-8 text-sm">
+      <div className="border border-hairline-dark bg-surface-card p-5 mb-8 text-sm rounded-lg">
         <FilterRow
           label="品牌："
           options={BRAND_OPTIONS}
@@ -123,15 +123,15 @@ export default function CinemasTab() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center mb-6 pl-4 border-l-4 border-primary">
-        <h2 className="text-xl text-gray-800">影院列表</h2>
+      <div className="flex items-center mb-6 pl-4 border-l-[3px] border-primary">
+        <h2 className="text-xl font-semibold tracking-tight text-body-dark">影院列表</h2>
       </div>
 
       {/* Cinema List */}
       {loading ? (
         <Loading />
       ) : filteredCinemas.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">暂无影院数据</div>
+        <div className="text-center py-20 text-muted">暂无影院数据</div>
       ) : (
         <div className="space-y-0">
           {filteredCinemas.map((cinema) => {
@@ -145,27 +145,27 @@ export default function CinemasTab() {
             return (
               <div
                 key={cinema.id}
-                className="py-6 border-b border-gray-100 flex justify-between items-center group hover:bg-gray-50 px-4 transition-colors"
+                className="py-6 border-b border-hairline-dark flex justify-between items-center group hover:bg-surface-elevated/40 hover:border-hairline-dark px-4 rounded-md transition-all"
               >
                 {/* Left: Info */}
                 <div className="flex-1">
                   <h3
                     onClick={() => router.push(`/cinema-detail?cinemaId=${cinema.id}`)}
-                    className="text-base font-medium text-gray-800 mb-1 cursor-pointer hover:text-primary transition-colors"
+                    className="text-base font-medium text-body-dark mb-1 cursor-pointer hover:text-primary transition-colors"
                   >
                     {cinema.nm}
                   </h3>
-                  <div className="text-sm text-gray-500 mb-2 truncate max-w-[600px]">
+                  <div className="text-sm text-muted mb-2 truncate max-w-[600px]">
                     {cinema.addr}
                   </div>
                   <div className="flex space-x-2 flex-wrap gap-y-1">
                     {tags.slice(0, 5).map((tag, idx) => (
                       <span
                         key={idx}
-                        className={`text-xs px-1 border rounded ${
+                        className={`text-xs px-1.5 py-0.5 border rounded ${
                           tag.type === 'blue'
-                            ? 'border-blue-300 text-blue-400'
-                            : 'border-orange-300 text-orange-400'
+                            ? 'border-info/40 text-info'
+                            : 'border-primary/40 text-primary'
                         }`}
                       >
                         {tag.text}
@@ -178,14 +178,14 @@ export default function CinemasTab() {
                 <div className="flex items-center space-x-6 text-right">
                   <div>
                     {cinema.distance && (
-                      <div className="text-xs text-gray-400">
+                      <div className="font-plex text-xs text-muted">
                         {cinema.distance}
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => router.push(`/cinema-detail?cinemaId=${cinema.id}`)}
-                    className="px-5 py-1.5 bg-primary text-white rounded-full text-sm shadow-sm hover:bg-red-600 transition-colors"
+                    className="px-5 py-2 bg-primary text-on-primary rounded-md text-sm font-medium shadow-sm hover:bg-primary-active transition-colors pressable"
                   >
                     选座购票
                   </button>

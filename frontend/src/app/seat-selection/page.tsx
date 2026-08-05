@@ -2,7 +2,8 @@
 
 import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Monitor, Coins } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
+import { ArrowLeft, Monitor, Coins, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Loading from '@/components/Loading'
 import QueueWaiting from '@/components/QueueWaiting'
@@ -17,6 +18,7 @@ function SeatSelectionContent() {
   const scheduleId = searchParams.get('scheduleId')
   const movieId = searchParams.get('movieId')
   const { isLogged } = useUserStore()
+  const reduce = useReducedMotion()
 
   const [layout, setLayout] = useState<SeatLayoutData | null>(null)
   const [movieDetail, setMovieDetail] = useState<any>(null)
@@ -174,18 +176,14 @@ function SeatSelectionContent() {
     }
   }
 
-  const getSeatColor = (seat: SeatInfo, isSelected: boolean) => {
+  // 交易语义色：可选=绿（可买）· 已售=灰 · 他人锁定=红（不可买）· 已选=黄 · 情侣座=蓝
+  const getSeatClasses = (seat: SeatInfo, isSelected: boolean) => {
     if (seat.status === -1) return 'bg-transparent'
-    if (seat.status === 1) return 'bg-gray-300'
-    if (seat.status === 2) return 'bg-orange-200'
-    if (seat.status === 3 || isSelected) return 'bg-primary'
-    if (seat.couple) return 'bg-pink-100 border-pink-300 hover:bg-pink-200'
-    return 'bg-green-100 border-green-300 hover:bg-green-200'
-  }
-
-  const getSeatCursor = (seat: SeatInfo) => {
-    if (seat.status === -1 || seat.status === 1 || seat.status === 2) return 'cursor-not-allowed'
-    return 'cursor-pointer'
+    if (seat.status === 1) return 'bg-surface-elevated text-muted cursor-not-allowed'
+    if (seat.status === 2) return 'bg-trading-down/25 border border-trading-down/40 text-trading-down cursor-not-allowed'
+    if (seat.status === 3 || isSelected) return 'bg-primary text-on-primary border-primary'
+    if (seat.couple) return 'bg-info/15 border border-info/40 text-info hover:bg-info/25 cursor-pointer'
+    return 'bg-trading-up/15 border border-trading-up/40 text-trading-up hover:bg-trading-up/25 cursor-pointer'
   }
 
   const totalPoints = schedule ? Math.ceil(selectedSeats.length * (schedule.price || 0)) : 0
@@ -193,45 +191,45 @@ function SeatSelectionContent() {
   if (loading) return <Loading />
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-canvas-dark">
       {/* Top bar */}
-      <div className="bg-white border-b border-gray-200 min-w-[1200px]">
-        <div className="max-w-[1200px] mx-auto h-[60px] flex items-center gap-4">
-          <ArrowLeft className="w-6 h-6 text-gray-500 cursor-pointer hover:text-primary" onClick={() => router.back()} />
-          <h1 className="text-lg font-medium">选择座位</h1>
+      <div className="bg-surface-card border-b border-hairline-dark min-w-[1200px]">
+        <div className="max-w-[1280px] mx-auto h-[60px] flex items-center gap-4 px-4">
+          <ArrowLeft className="w-6 h-6 text-muted cursor-pointer hover:text-primary transition-colors" onClick={() => router.back()} />
+          <h1 className="text-lg font-medium text-body-dark">选择座位</h1>
         </div>
       </div>
 
       {/* 步骤指示 */}
-      <div className="bg-white border-b border-gray-100 min-w-[1200px]">
-        <div className="max-w-[1200px] mx-auto flex items-center justify-center py-4 gap-2 text-sm">
-          {['选择场次', '选择座位', '积分支付', '影院取票观影'].map((step, idx) => (
+      <div className="bg-surface-card border-b border-hairline-dark min-w-[1200px]">
+        <div className="max-w-[1280px] mx-auto flex items-center justify-center py-4 gap-2 text-sm">
+          {['选择场次', '选择座位', '扫码支付', '影院取票观影'].map((step, idx) => (
             <div key={step} className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${idx <= 1 ? 'bg-primary text-white' : 'bg-gray-200 text-gray-500'}`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${idx <= 1 ? 'bg-primary text-on-primary' : 'bg-surface-elevated text-muted'}`}>
                 {idx + 1}
               </span>
-              <span className={idx <= 1 ? 'text-primary font-medium' : 'text-gray-400'}>{step}</span>
-              {idx < 3 && <span className="text-gray-300 mx-2">→</span>}
+              <span className={idx <= 1 ? 'text-primary font-medium' : 'text-muted'}>{step}</span>
+              {idx < 3 && <span className="text-muted mx-2">→</span>}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto mt-6 flex gap-6">
+      <div className="max-w-[1280px] mx-auto mt-6 flex gap-6 px-4">
         {/* 左侧：座位图 */}
-        <div className="flex-1 bg-white rounded shadow-sm p-6">
+        <div className="flex-1 bg-surface-card border border-hairline-dark rounded-xl p-6 shadow-card-dark">
           {layout ? (
             <>
               {/* 影厅信息 */}
               <div className="text-center mb-6">
-                <h2 className="text-lg font-medium text-gray-800">{layout.hallName}</h2>
-                <span className="text-sm text-gray-400">{layout.hallType}</span>
+                <h2 className="text-lg font-medium text-body-dark">{layout.hallName}</h2>
+                <span className="font-plex text-sm text-muted">{layout.hallType}</span>
               </div>
 
               {/* 银幕 */}
               <div className="flex justify-center mb-8">
-                <div className="w-[60%] h-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent rounded-full relative">
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-400 flex items-center gap-1">
+                <div className="w-[60%] h-[3px] bg-gradient-to-r from-transparent via-primary/60 to-transparent rounded-full relative">
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-muted flex items-center gap-1">
                     <Monitor className="w-3.5 h-3.5" />
                     银幕
                   </div>
@@ -239,25 +237,25 @@ function SeatSelectionContent() {
               </div>
 
               {/* 座位图例 */}
-              <div className="flex items-center justify-center gap-6 mb-4 text-xs text-gray-500">
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded" />
+              <div className="flex items-center justify-center gap-6 mb-4 text-xs text-muted-strong">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-trading-up/15 border border-trading-up/40 rounded" />
                   <span>可选</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 bg-primary rounded" />
                   <span>已选</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 bg-gray-300 rounded" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-surface-elevated border border-hairline-dark rounded" />
                   <span>已售</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 bg-orange-200 rounded" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-trading-down/25 border border-trading-down/40 rounded" />
                   <span>锁定</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 bg-pink-100 border border-pink-300 rounded" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-info/15 border border-info/40 rounded" />
                   <span>情侣座</span>
                 </div>
               </div>
@@ -268,7 +266,7 @@ function SeatSelectionContent() {
                   {layout.seats.map((row, rowIdx) => (
                     <div key={rowIdx} className="flex items-center mb-1">
                       {/* 行号 */}
-                      <div className="w-6 text-xs text-gray-400 text-right mr-2 shrink-0">
+                      <div className="font-plex w-6 text-xs text-muted text-right mr-2 shrink-0">
                         {rowIdx + 1}
                       </div>
                       {row.map((seat, colIdx) => {
@@ -279,13 +277,17 @@ function SeatSelectionContent() {
                             {seat.status === -1 ? (
                               <div className="w-7 h-7 m-0.5" />
                             ) : (
-                              <div
+                              <motion.div
                                 onClick={() => handleSeatClick(seat)}
                                 title={seat.label}
-                                className={`w-7 h-7 m-0.5 rounded border text-[10px] flex items-center justify-center transition-all ${getSeatColor(seat, isSelected)} ${getSeatCursor(seat)} ${isSelected ? 'text-white scale-110' : 'text-gray-600'}`}
+                                initial={reduce ? false : { scale: 0.6, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                whileTap={reduce ? undefined : { scale: 0.85 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                className={`w-7 h-7 m-0.5 rounded border text-[10px] font-plex flex items-center justify-center transition-colors duration-150 ${getSeatClasses(seat, isSelected)} ${isSelected ? 'scale-105 font-bold' : ''}`}
                               >
                                 {isSelected ? '✓' : seat.col}
-                              </div>
+                              </motion.div>
                             )}
                           </div>
                         )
@@ -296,77 +298,82 @@ function SeatSelectionContent() {
               </div>
             </>
           ) : (
-            <div className="text-center py-12 text-gray-400">暂无座位信息</div>
+            <div className="text-center py-12 text-muted">暂无座位信息</div>
           )}
         </div>
 
         {/* 右侧：选座信息 */}
         <div className="w-[320px] shrink-0">
-          <div className="bg-white rounded shadow-sm p-6 sticky top-[100px]">
+          <div className="bg-surface-card border border-hairline-dark rounded-xl p-6 sticky top-[100px] shadow-card-dark">
             {/* 电影信息 */}
             {movieDetail && (
-              <div className="flex gap-3 mb-6 pb-4 border-b border-gray-100">
+              <div className="flex gap-3 mb-6 pb-4 border-b border-hairline-dark">
                 <img src={imgUrlReplace(movieDetail.img)} alt={movieDetail.nm} className="w-16 h-22 rounded object-cover" />
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-800 truncate">{movieDetail.nm}</h3>
-                  {movieDetail.cat && <p className="text-xs text-gray-400 mt-1">{movieDetail.cat}</p>}
-                  {movieDetail.dur && <p className="text-xs text-gray-400">{movieDetail.dur}分钟</p>}
+                  <h3 className="font-medium text-body-dark truncate">{movieDetail.nm}</h3>
+                  {movieDetail.cat && <p className="text-xs text-muted mt-1">{movieDetail.cat}</p>}
+                  {movieDetail.dur && <p className="font-plex text-xs text-muted">{movieDetail.dur}分钟</p>}
                 </div>
               </div>
             )}
 
             {/* 场次信息 */}
             {schedule && (
-              <div className="mb-6 pb-4 border-b border-gray-100 text-sm text-gray-600">
+              <div className="mb-6 pb-4 border-b border-hairline-dark text-sm text-muted-strong">
                 <p>{schedule.showDate} {schedule.showTime} - {schedule.endTime}</p>
-                <p className="text-gray-400 mt-1">{schedule.hallName} / {schedule.lang}</p>
+                <p className="text-muted mt-1">{schedule.hallName} / {schedule.lang}</p>
               </div>
             )}
 
             {/* 已选座位 */}
             <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
-                已选座位 ({selectedSeats.length}/{MAX_SEATS})
+              <h4 className="text-sm font-medium text-body-dark mb-3">
+                已选座位 (<span className="font-plex text-primary">{selectedSeats.length}</span>/{MAX_SEATS})
               </h4>
               {selectedSeats.length === 0 ? (
-                <p className="text-sm text-gray-400">请在左侧选择座位</p>
+                <p className="text-sm text-muted">请在左侧选择座位</p>
               ) : (
                 <div className="space-y-2">
                   {selectedSeats.map((seat) => (
-                    <div key={`${seat.row}-${seat.col}`} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-700">{seat.label}</span>
+                    <motion.div
+                      key={`${seat.row}-${seat.col}`}
+                      initial={reduce ? false : { opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-muted-strong">{seat.label}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-primary font-medium">{Math.ceil(schedule?.price || 0)} 积分</span>
+                        <span className="font-plex text-primary font-medium">{Math.ceil(schedule?.price || 0)} 积分</span>
                         <button
                           onClick={() => setSelectedSeats(prev => prev.filter(s => !(s.row === seat.row && s.col === seat.col)))}
-                          className="text-gray-400 hover:text-red-500 text-xs"
+                          className="text-muted hover:text-trading-down transition-colors"
                         >
-                          ✕
+                          <X size={14} />
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </div>
 
             {/* 总价 + 确认 */}
-            <div className="border-t border-gray-100 pt-4">
+            <div className="border-t border-hairline-dark pt-4">
               <div className="flex items-baseline justify-between mb-4">
-                <span className="text-gray-600 text-sm">总计</span>
+                <span className="text-muted-strong text-sm">总计</span>
                 <div className="flex items-center gap-1">
                   <Coins className="w-5 h-5 text-primary" />
-                  <span className="text-2xl font-bold text-primary">{totalPoints}</span>
+                  <span className="font-plex text-2xl font-bold text-primary">{totalPoints}</span>
                   <span className="text-sm text-primary">积分</span>
                 </div>
               </div>
               <button
                 onClick={handleConfirm}
                 disabled={selectedSeats.length === 0 || locking}
-                className={`w-full py-3 rounded-full text-white font-medium transition-colors ${
+                className={`w-full py-3.5 rounded-md font-semibold transition-all pressable ${
                   selectedSeats.length === 0 || locking
-                    ? 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-primary hover:bg-red-600'
+                    ? 'bg-primary-disabled text-muted cursor-not-allowed'
+                    : 'bg-primary text-on-primary hover:bg-primary-active'
                 }`}
               >
                 {locking ? '锁座中...' : `确认选座（${selectedSeats.length}张）`}

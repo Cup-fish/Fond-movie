@@ -12,10 +12,10 @@ export default function RootPage() {
   const [activeTab, setActiveTab] = useState<Tab>('home')
 
   return (
-    <div className="min-h-screen bg-white text-[#333] font-sans flex flex-col">
+    <div className="min-h-screen bg-canvas-dark text-body-dark font-sans flex flex-col">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <main className="max-w-[1200px] mx-auto mt-12 min-h-[600px] pb-10 w-full">
+      <main className="max-w-[1280px] mx-auto mt-10 min-h-[600px] pb-10 w-full px-4">
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'movies' && <MoviesTab />}
         {activeTab === 'cinemas' && <CinemasTab />}

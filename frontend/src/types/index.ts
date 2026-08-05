@@ -150,6 +150,38 @@ export interface OrderItem {
   movieImg?: string
 }
 
+// ==================== 支付相关（扫码支付） ====================
+export interface PaymentTradeItem {
+  paymentNo: string
+  orderNo: string
+  totalPrice: number
+  status: number // 0=待支付 1=已支付 2=已关闭
+  statusDesc: string
+  createTime?: string
+  payTime?: string
+  expireTime?: string
+}
+
+export interface PaymentStatusItem {
+  paymentStatus: number // 支付单状态：0=待支付 1=已支付 2=已关闭
+  orderStatus: number // 订单状态：0=待支付 1=已支付 2=已取消 3=已退款
+  orderStatusDesc: string
+  payTime?: string
+  remainingPoints?: number
+}
+
+export interface MockOrderInfoItem {
+  orderNo: string
+  movieName: string
+  cinemaName: string
+  hallName: string
+  showTime: string
+  seatsInfo: string
+  totalPrice: number
+  expireTime?: string
+  orderStatus: number
+}
+
 // ==================== 搜索相关 ====================
 export interface SearchParams {
   kw: string | number
