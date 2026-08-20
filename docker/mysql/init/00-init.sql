@@ -242,6 +242,36 @@ CREATE TABLE IF NOT EXISTS order_seat (
     UNIQUE INDEX idx_order_seat_unique (schedule_id, row_num, col_num)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 支付单表（与 H2 schema.sql 对齐）
+CREATE TABLE IF NOT EXISTS payment_trade (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_no      VARCHAR(64)   NOT NULL COMMENT '支付单号（网关侧）',
+    order_no        VARCHAR(64)   NOT NULL COMMENT '关联业务订单号',
+    user_id         BIGINT        NOT NULL COMMENT '用户ID',
+    total_price     DECIMAL(10,2) NOT NULL COMMENT '支付金额（积分）',
+    status          INT           DEFAULT 0 COMMENT '0=待支付 1=已支付 2=已关闭',
+    pay_time        TIMESTAMP     NULL          COMMENT '支付时间',
+    expire_time     TIMESTAMP     NOT NULL COMMENT '过期时间（与订单对齐，15分钟）',
+    create_time     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    update_time     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted         INT           DEFAULT 0,
+    UNIQUE INDEX idx_payment_no (payment_no),
+    UNIQUE INDEX idx_payment_order_no (order_no),
+    INDEX idx_payment_user (user_id, status, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Outbox 事件表（与 H2 schema.sql 对齐）
+CREATE TABLE IF NOT EXISTS outbox_event (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_type   VARCHAR(64)   NOT NULL COMMENT 'ORDER_CREATED/ORDER_PAID/ORDER_CANCELLED/ORDER_TIMEOUT',
+    payload      TEXT          NOT NULL COMMENT 'JSON 载荷',
+    status       VARCHAR(16)   NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
+    create_time  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    sent_time    TIMESTAMP     NULL,
+    retries      INT           DEFAULT 0,
+    INDEX idx_outbox_status_create (status, create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- =====================================================
 -- 初始数据
