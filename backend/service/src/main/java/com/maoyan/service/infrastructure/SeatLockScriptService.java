@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 座位锁 Lua 脚本服务 — 单座独立 Key，原子批量锁
@@ -152,12 +154,12 @@ public class SeatLockScriptService {
             boolean success = result != null && result == 1L;
 
             if (success) {
-                // 维护辅助 Set（渲染加速，非权威）
+                // 维护辅助 Set（渲染加速，非权威），一次批量写入
                 String lockedSetKey = CacheConstants.SEAT_LOCKED_SET_PREFIX + scheduleId;
-                for (LockSeatsDTO.SeatPos seat : seats) {
-                    String member = seat.getRow() + "_" + seat.getCol();
-                    stringRedisTemplate.opsForSet().add(lockedSetKey, member);
-                }
+                String[] members = seats.stream()
+                        .map(seat -> seat.getRow() + "_" + seat.getCol())
+                        .toArray(String[]::new);
+                stringRedisTemplate.opsForSet().add(lockedSetKey, members);
                 log.info("[SeatLock] Lua locked {} seats: scheduleId={}, userId={}", seats.size(), scheduleId, userId);
             } else {
                 log.info("[SeatLock] Lua lock rejected (occupied by others): scheduleId={}, userId={}", scheduleId, userId);
@@ -189,12 +191,12 @@ public class SeatLockScriptService {
             Long released = stringRedisTemplate.execute(releaseScript, keys, String.valueOf(userId));
             int count = released != null ? released.intValue() : 0;
 
-            // 清理辅助 Set
+            // 清理辅助 Set，一次批量删除
             String lockedSetKey = CacheConstants.SEAT_LOCKED_SET_PREFIX + scheduleId;
-            for (LockSeatsDTO.SeatPos seat : seats) {
-                String member = seat.getRow() + "_" + seat.getCol();
-                stringRedisTemplate.opsForSet().remove(lockedSetKey, member);
-            }
+            String[] members = seats.stream()
+                    .map(seat -> seat.getRow() + "_" + seat.getCol())
+                    .toArray(String[]::new);
+            stringRedisTemplate.opsForSet().remove(lockedSetKey, members);
 
             log.info("[SeatLock] Released {} seats: scheduleId={}, userId={}", count, scheduleId, userId);
             return count;
@@ -227,14 +229,43 @@ public class SeatLockScriptService {
 
         try {
             stringRedisTemplate.execute(releaseAndMarkSoldScript, keys, args.toArray(new String[0]));
-            // 清理 locked 辅助 Set
+            // 清理 locked 辅助 Set，一次批量删除
             String lockedSetKey = CacheConstants.SEAT_LOCKED_SET_PREFIX + scheduleId;
-            for (String member : members) {
-                stringRedisTemplate.opsForSet().remove(lockedSetKey, member);
-            }
+            stringRedisTemplate.opsForSet().remove(lockedSetKey, members.toArray(new String[0]));
             log.info("[SeatLock] Released locks and marked sold: scheduleId={}, seats={}", scheduleId, members);
         } catch (Exception e) {
             log.error("[SeatLock] Failed to release locks and mark sold: scheduleId={}", scheduleId, e);
+        }
+    }
+
+    /**
+     * 批量获取某影厅所有座位的锁状态（一次 MGET，减少 N 次 Redis 请求）
+     *
+     * @return key(row_col) -> userId，未锁的座位不会出现在 Map 中
+     */
+    public Map<String, String> getSeatOwners(Long scheduleId, int rows, int cols) {
+        if (stringRedisTemplate == null) {
+            return Collections.emptyMap();
+        }
+        List<String> keys = new ArrayList<>(rows * cols);
+        for (int r = 1; r <= rows; r++) {
+            for (int c = 1; c <= cols; c++) {
+                keys.add(buildSeatLockKey(scheduleId, r, c));
+            }
+        }
+        try {
+            List<String> values = stringRedisTemplate.opsForValue().multiGet(keys);
+            Map<String, String> ownerMap = new HashMap<>(keys.size());
+            for (int i = 0; i < keys.size(); i++) {
+                String owner = values != null && i < values.size() ? values.get(i) : null;
+                if (owner != null) {
+                    ownerMap.put(keys.get(i).substring(keys.get(i).lastIndexOf(':') + 1), owner);
+                }
+            }
+            return ownerMap;
+        } catch (Exception e) {
+            log.warn("[SeatLock] Failed to batch get seat owners: scheduleId={}", scheduleId, e);
+            return Collections.emptyMap();
         }
     }
 

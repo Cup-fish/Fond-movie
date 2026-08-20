@@ -1,7 +1,7 @@
 package com.maoyan.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.maoyan.common.constants.CommonConstants;
+import com.maoyan.common.constants.CacheConstants;
 import com.maoyan.dao.mapper.OrderMapper;
 import com.maoyan.dao.mapper.OrderSeatMapper;
 import com.maoyan.dao.mapper.PaymentTradeMapper;
@@ -24,10 +24,16 @@ import com.maoyan.service.infrastructure.OutboxService;
 import com.maoyan.service.infrastructure.QueueService;
 import com.maoyan.service.infrastructure.SeatLockScriptService;
 import com.maoyan.service.infrastructure.SeatSoldService;
+import com.maoyan.service.infrastructure.TransactionSynchronizationUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -65,6 +71,14 @@ public class PaymentService {
     private final OutboxService outboxService;
     private final QueueService queueService;
     private final OrderService orderService;
+    private final TransactionTemplate transactionTemplate;
+
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
+    /** 模拟支付网关签名密钥（仅用于 sign 非空时校验，真实环境由支付平台下发） */
+    @Value("${maoyan.mock-pay.secret:maoyan-mock-pay-secret}")
+    private String mockPaySecret;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter PAY_NO_FMT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -78,7 +92,8 @@ public class PaymentService {
                           SeatSoldService soldService,
                           OutboxService outboxService,
                           QueueService queueService,
-                          OrderService orderService) {
+                          OrderService orderService,
+                          PlatformTransactionManager transactionManager) {
         this.orderMapper = orderMapper;
         this.seatLockMapper = seatLockMapper;
         this.orderSeatMapper = orderSeatMapper;
@@ -89,6 +104,7 @@ public class PaymentService {
         this.outboxService = outboxService;
         this.queueService = queueService;
         this.orderService = orderService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     // =================== 扫码支付：创建 / 轮询 / 回调 ===================
@@ -145,7 +161,6 @@ public class PaymentService {
      *
      * <p>事务保证懒过期关单（5+ DB 写 + outbox）原子提交</p>
      */
-    @Transactional(rollbackFor = Exception.class, timeout = 8)
     public PaymentStatusVO getPaymentStatus(Long userId, String orderNo) {
         OrderPO order = selectUserOrder(userId, orderNo);
         if (order == null) {
@@ -155,7 +170,8 @@ public class PaymentService {
         // 懒过期：仅待支付订单过期时关单（支付单联动关闭）；已支付/已取消直接返回终态
         if (order.getStatus() == OrderStatusEnum.PENDING.getCode()
                 && order.getExpireTime() != null && now.isAfter(order.getExpireTime())) {
-            orderService.closePendingOrder(order, "PAYMENT_POLL_EXPIRE");
+            OrderPO expiredOrder = order;
+            transactionTemplate.executeWithoutResult(status -> orderService.closePendingOrder(expiredOrder, "PAYMENT_POLL_EXPIRE"));
             order = selectUserOrder(userId, orderNo); // 刷新为已取消状态
         }
 
@@ -186,13 +202,20 @@ public class PaymentService {
      * 真实网关由支付平台签名，密钥不暴露给前端。</p>
      */
     @Transactional(rollbackFor = Exception.class, timeout = 8)
-    public void mockNotify(String orderNo, String sign) {
-        verifySign(orderNo, sign);
+    public void mockNotify(String orderNo, String paymentNo, String sign) {
+        if (paymentNo == null || paymentNo.isBlank()) {
+            throw new BizException(ResponseCodeEnum.UNAUTHORIZED.getCode(), "缺少支付凭证");
+        }
 
         PaymentTradePO pay = paymentTradeMapper.selectByOrderNo(orderNo);
         if (pay == null) {
             throw new BizException(ResponseCodeEnum.NOT_FOUND.getCode(), "支付单不存在");
         }
+        if (!pay.getPaymentNo().equals(paymentNo)) {
+            throw new BizException(ResponseCodeEnum.UNAUTHORIZED.getCode(), "支付凭证无效");
+        }
+
+        verifySign(orderNo, sign);
         // 幂等：已支付直接返回成功（订单状态机 CAS 保证不重复扣款）
         if (pay.getStatus() == 1) {
             log.info("[Payment] Mock notify ignored (already paid): orderNo={}", orderNo);
@@ -338,11 +361,13 @@ public class PaymentService {
         eventPayload.put("timestamp", System.currentTimeMillis());
         outboxService.writeEvent("ORDER_PAID", eventPayload);
 
-        // 8. 事务后 best-effort：更新 Redis 投影
-        updateRedisProjection(order.getScheduleId(), seatPositions, userId);
-
-        // ★ 释放排队入场名额（用户已完成支付，名额让给排队者）
-        queueService.leave(order.getScheduleId(), userId);
+        // 8. 事务提交后 best-effort：更新 Redis 投影 + 释放排队入场名额
+        //    （避免 DB 回滚后 Redis 已变更造成不一致）
+        Long scheduleId = order.getScheduleId();
+        TransactionSynchronizationUtils.afterCommit(() -> {
+            updateRedisProjection(scheduleId, seatPositions, userId);
+            queueService.leave(scheduleId, userId);
+        });
 
         log.info("[Payment] Order paid: orderNo={}, userId={}, total={}, pointsAfter={}",
                 orderNo, userId, order.getTotalPrice(), user.getPoints() - pointsCost);
@@ -414,7 +439,7 @@ public class PaymentService {
             log.warn("[Payment] Mock notify without sign (demo mode): orderNo={}", orderNo);
             return;
         }
-        String expected = hmacSha256Hex(CommonConstants.MOCK_PAYMENT_SECRET, orderNo);
+        String expected = hmacSha256Hex(mockPaySecret, orderNo);
         if (!expected.equalsIgnoreCase(sign)) {
             throw new BizException(ResponseCodeEnum.UNAUTHORIZED, "支付回调验签失败");
         }
@@ -445,7 +470,14 @@ public class PaymentService {
     }
 
     private void invalidateRenderCache(Long scheduleId) {
-        // 渲染缓存自然过期即可（3-5s TTL），无需主动删除
+        if (stringRedisTemplate == null) {
+            return;
+        }
+        try {
+            stringRedisTemplate.delete(CacheConstants.SEAT_LAYOUT_RENDERED_PREFIX + scheduleId);
+        } catch (Exception e) {
+            log.warn("[Payment] Failed to invalidate render cache: scheduleId={}", scheduleId, e);
+        }
     }
 
     private PaymentTradeVO toVO(PaymentTradePO po) {

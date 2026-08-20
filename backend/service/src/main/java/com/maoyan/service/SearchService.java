@@ -3,7 +3,6 @@ package com.maoyan.service;
 import com.maoyan.domain.model.vo.CinemaVO;
 import com.maoyan.domain.model.vo.MovieVO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Resource;
@@ -41,14 +40,5 @@ public class SearchService {
         result.put("movies", Map.of("list", movies));
         result.put("cinemas", Map.of("list", cinemas));
         return result;
-    }
-
-    /**
-     * 异步记录搜索行为（用于后续搜索推荐/热词统计）
-     */
-    @Async("bizTaskExecutor")
-    public void recordSearchAsync(String keyword, Long cityId) {
-        log.debug("异步记录搜索行为: keyword={}, cityId={}", keyword, cityId);
-        // TODO: 写入搜索日志表或消息队列，供数据分析使用
     }
 }

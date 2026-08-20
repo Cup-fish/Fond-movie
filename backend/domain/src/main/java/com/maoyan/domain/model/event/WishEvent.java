@@ -27,4 +27,7 @@ public class WishEvent implements Serializable {
 
     /** 事件时间戳 */
     private long timestamp;
+
+    /** 事件唯一ID，用于消费幂等 */
+    private String eventId;
 }

@@ -10,26 +10,64 @@ const authInstance = axios.create({
   baseURL: '/api',
 })
 
+// 统一读取本地持久化的 token（zustand persist 存储格式：{ state: { token, ... } }）
+const getStoredToken = (): string | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem('maoyan-user')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return parsed?.state?.token || null
+    }
+  } catch {}
+  return null
+}
+
 // 请求拦截器 —— 为所有请求附带 JWT token
 const attachToken = (config: any) => {
-  if (typeof window !== 'undefined') {
-    let token: string | null = null
-    try {
-      const stored = localStorage.getItem('maoyan-user')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        token = parsed?.state?.token || null
-      }
-    } catch {}
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+  const token = getStoredToken()
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 }
 
+// ==================== 登录态失效处理 ====================
+// 后端 JWT 过期（默认 72h）或后端更换密钥后，携带旧 token 的请求会返回 401。
+// 这里统一处理：清除本地会话 → 跳转登录页（带原因 + 回跳地址），
+// 避免在购票/支付流程中弹出「token失效」之类的原始错误提示。
+
+let authRedirected = false
+
+// 登录/注册接口的 401 是「账号密码错误」，属于正常业务返回，不触发登出跳转
+const AUTH_EXEMPT_PATHS = ['/auth/login', '/auth/register']
+
+const handleUnauthorized = (url?: string) => {
+  if (authRedirected) return
+  if (url && AUTH_EXEMPT_PATHS.some((p) => url.includes(p))) return
+  authRedirected = true
+  try {
+    localStorage.removeItem('maoyan-user')
+  } catch {}
+  // 已在登录页则不重复跳转
+  if (window.location.pathname !== '/login') {
+    const redirect = window.location.pathname + window.location.search
+    window.location.replace(`/login?reason=expired&redirect=${encodeURIComponent(redirect)}`)
+  }
+}
+
+// 401 统一兜底：登录过期/凭证无效 → 清理会话并跳转登录
+const handleAuthError = (error: any) => {
+  if (error?.response?.status === 401) {
+    handleUnauthorized(error?.config?.url)
+  }
+  return Promise.reject(error)
+}
+
 instance.interceptors.request.use(attachToken)
 authInstance.interceptors.request.use(attachToken)
+instance.interceptors.response.use((res) => res, handleAuthError)
+authInstance.interceptors.response.use((res) => res, handleAuthError)
 
 const api = {
   /** 正在热映列表 */
@@ -147,8 +185,8 @@ const api = {
   getPaymentStatus: (params: { orderNo: string }) =>
     authInstance.get('/payment/status', { params }).then((res) => res.data),
 
-  /** 模拟支付网关回调（无用户态，收银台「确认付款」触发） */
-  mockNotify: (data: { orderNo: string; sign?: string }) =>
+  /** 模拟支付网关回调（无用户态，收银台「确认付款」触发；paymentNo 为支付凭证） */
+  mockNotify: (data: { orderNo: string; paymentNo: string; sign?: string }) =>
     axios.post('/api/payment/mock/notify', data).then((res) => res.data),
 
   /** 收银台订单摘要（无用户态） */
@@ -171,17 +209,18 @@ const api = {
 
   /** 获取当前用户信息（含积分） */
   getUserInfo: () => {
-    let token: string | null = null
-    try {
-      const stored = localStorage.getItem('maoyan-user')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        token = parsed?.state?.token || null
-      }
-    } catch {}
+    const token = getStoredToken()
     return axios.get('/api/auth/me', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-    }).then((res) => res.data)
+    })
+      .then((res) => res.data)
+      .catch((error) => {
+        // token 失效同样清理会话并跳转登录
+        if (error?.response?.status === 401) {
+          handleUnauthorized('/api/auth/me')
+        }
+        throw error
+      })
   },
 
   // ==================== 排队相关（热门场次 Waiting Room） ====================

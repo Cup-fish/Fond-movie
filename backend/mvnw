@@ -1,0 +1,35 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Apache Maven Wrapper startup script for Unix-like systems.
+# ----------------------------------------------------------------------------
+
+set -e
+
+# Resolve the real project base directory.
+PRG="$0"
+while [ -h "$PRG" ]; do
+  ls=$(ls -ld "$PRG")
+  link=$(expr "$ls" : '.*-> \(.*\)$')
+  case "$link" in
+    /*) PRG="$link" ;;
+    *)  PRG=$(dirname "$PRG")/"$link" ;;
+  esac
+done
+MAVEN_PROJECTBASEDIR=$(cd "$(dirname "$PRG")" >/dev/null 2>&1 && pwd)
+
+if [ -n "$JAVA_HOME" ]; then
+  JAVACMD="$JAVA_HOME/bin/java"
+else
+  JAVACMD=java
+fi
+
+if [ ! -x "$JAVACMD" ] && ! command -v "$JAVACMD" >/dev/null 2>&1; then
+  echo "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH." >&2
+  exit 1
+fi
+
+exec "$JAVACMD" \
+  ${MAVEN_OPTS:+"$MAVEN_OPTS"} \
+  -classpath "$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar" \
+  "-Dmaven.multiModuleProjectDirectory=$MAVEN_PROJECTBASEDIR" \
+  org.apache.maven.wrapper.MavenWrapperMain "$@"

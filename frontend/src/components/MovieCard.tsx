@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { motion, useReducedMotion } from 'motion/react'
 import { imgUrlReplace } from '@/lib/utils'
 import type { MovieItem } from '@/types'
@@ -19,6 +20,8 @@ interface MovieCardProps {
 export default function MovieCard({ movie, showButton = true, index = 0 }: MovieCardProps) {
   const isPlaying = movie.globalReleased
   const reduce = useReducedMotion()
+  const router = useRouter()
+  const goDetail = () => router.push(`/movie-detail?movieId=${movie.id}`)
 
   const score = Number(movie.sc)
   const scoreColor =
@@ -34,15 +37,18 @@ export default function MovieCard({ movie, showButton = true, index = 0 }: Movie
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={reduce ? undefined : { y: -4 }}
       transition={{ duration: 0.5, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
       className="w-[160px] flex flex-col mb-6 group cursor-pointer"
     >
-      <div className="relative w-full h-[220px] overflow-hidden rounded-lg bg-surface-card border border-hairline-dark card-lift">
+      <div className="relative w-full h-[220px] overflow-hidden rounded-lg bg-surface-card border border-hairline-dark card-lift group-hover:border-primary/40 group-hover:shadow-card-dark transition-all duration-300">
         <img
           src={imgUrlReplace(movie.img)}
           alt={movie.nm}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
         />
+        {/* 鼠标扫过时光效 */}
+        <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
         {/* Tags Overlay — 左上角标签 */}
         {movie.cat && (
           <div className="absolute top-2 left-2 flex flex-col space-y-1">
@@ -74,7 +80,10 @@ export default function MovieCard({ movie, showButton = true, index = 0 }: Movie
       {showButton && (
         <div className="mt-2.5 flex items-center justify-between text-sm">
           {isPlaying ? (
-            <button className="w-full py-2 mt-1 bg-primary text-on-primary border border-white rounded-md hover:bg-primary-active transition-all pressable text-sm font-bold">
+            <button
+              onClick={goDetail}
+              className="w-full py-2 mt-1 bg-primary text-on-primary border border-white rounded-md hover:bg-primary-active transition-all pressable text-sm font-bold"
+            >
               购票
             </button>
           ) : (
@@ -83,10 +92,16 @@ export default function MovieCard({ movie, showButton = true, index = 0 }: Movie
                 <span className="font-plex text-primary">{movie.wish}人想看</span>
               </div>
               <div className="flex space-x-2">
-                <button className="flex-1 py-1.5 border border-hairline-dark text-primary rounded-md hover:bg-primary hover:text-on-primary transition-all pressable text-xs font-medium">
+                <button
+                  onClick={goDetail}
+                  className="flex-1 py-1.5 border border-hairline-dark text-primary rounded-md hover:bg-primary hover:text-on-primary transition-all pressable text-xs font-medium"
+                >
                   预告片
                 </button>
-                <button className="flex-1 py-1.5 border border-hairline-dark text-muted-strong rounded-md hover:bg-surface-elevated transition-all pressable text-xs">
+                <button
+                  onClick={goDetail}
+                  className="flex-1 py-1.5 border border-hairline-dark text-muted-strong rounded-md hover:bg-surface-elevated transition-all pressable text-xs"
+                >
                   预售
                 </button>
               </div>

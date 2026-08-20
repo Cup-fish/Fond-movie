@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useScroll, useMotionValueEvent, motion } from 'motion/react'
 import { ChevronDown, Search, User, Smartphone, Coins } from 'lucide-react'
+import { toast } from 'sonner'
 import { useUserStore } from '@/store/user'
 import { useHomeStore } from '@/store/home'
 import type { Tab } from '@/types'
@@ -91,7 +92,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
                 )}
               </button>
             ))}
-            <button className="px-4 text-[15px] font-medium text-muted-strong hover:text-body-dark transition-colors">
+            <button
+              onClick={() => router.push('/search?kw=演出')}
+              className="px-4 text-[15px] font-medium text-muted-strong hover:text-body-dark transition-colors"
+            >
               演出
             </button>
           </nav>
@@ -99,7 +103,10 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
 
         {/* Right: App, Search, User */}
         <div className="flex items-center gap-6">
-          <div className="flex items-center text-muted cursor-pointer hover:text-primary transition-colors">
+          <div
+            onClick={() => toast.info('演示环境暂未提供 APP 下载')}
+            className="flex items-center text-muted cursor-pointer hover:text-primary transition-colors"
+          >
             <Smartphone size={17} className="mr-1.5" />
             <span className="text-sm">APP下载</span>
             <ChevronDown size={14} className="ml-1" />

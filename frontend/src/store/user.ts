@@ -34,7 +34,7 @@ export const useUserStore = create<UserState>()(
             set({
               isLogged: true,
               userNick: res.data.userNick || account,
-              userHeadImg: res.data.headImg || undefined,
+              userHeadImg: res.data.userHeadImg || undefined,
               token: res.data.token,
               points: res.data.points ?? 0,
             })

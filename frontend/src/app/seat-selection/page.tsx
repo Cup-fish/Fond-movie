@@ -169,8 +169,11 @@ function SeatSelectionContent() {
       // 直接跳转支付页
       router.push(`/payment?orderNo=${orderNo}`)
     } catch (e: any) {
-      const msg = e?.response?.data?.message || '操作失败，请重试'
-      toast.error(msg)
+      // 401（会话过期）由全局拦截器清理并跳转登录，这里不重复弹原始错误
+      if (e?.response?.status !== 401) {
+        const msg = e?.response?.data?.message || '操作失败，请重试'
+        toast.error(msg)
+      }
     } finally {
       setLocking(false)
     }

@@ -84,20 +84,19 @@ public class MultiLevelCacheService {
 
         // 3. DB 回源（singleflight: Caffeine.get 保证同 key 只一个线程回源）
         log.debug("[Cache] MISS, loading from DB: {}", key);
-        T value = loader.get();
-
-        if (value != null) {
-            // 回填 L1
-            l1Cache.put(key, value);
-            // 回填 L2（TTL 加随机偏移防雪崩）
-            try {
-                long ttlMinutes = CacheConstants.L2_EXPIRE_MINUTES + randomOffset();
-                redisTemplate.opsForValue().set(key, value, ttlMinutes, TimeUnit.MINUTES);
-            } catch (Exception e) {
-                log.warn("[Cache] L2 write error for key={}: {}", key, e.getMessage());
+        return (T) l1Cache.get(key, k -> {
+            T value = loader.get();
+            if (value != null) {
+                // 回填 L2（TTL 加随机偏移防雪崩）
+                try {
+                    long ttlMinutes = CacheConstants.L2_EXPIRE_MINUTES + randomOffset();
+                    redisTemplate.opsForValue().set(k, value, ttlMinutes, TimeUnit.MINUTES);
+                } catch (Exception e) {
+                    log.warn("[Cache] L2 write error for key={}: {}", k, e.getMessage());
+                }
             }
-        }
-        return value;
+            return value;
+        });
     }
 
     /**

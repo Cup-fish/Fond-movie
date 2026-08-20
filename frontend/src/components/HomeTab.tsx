@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, TrendingUp } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import MovieCard from '@/components/MovieCard'
-import Loading from '@/components/Loading'
+import { MovieCardSkeleton, Skeleton } from '@/components/Skeleton'
 import Reveal from '@/components/motion/Reveal'
 import CountUp from '@/components/motion/CountUp'
 import api from '@/lib/api'
@@ -55,7 +55,27 @@ export default function HomeTab() {
 
   const router = useRouter()
 
-  if (loading) return <Loading />
+  if (loading) {
+    return (
+      <div className="flex gap-10">
+        <div className="flex-1">
+          <Skeleton className="mb-6 h-8 w-40" />
+          <div className="grid grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, i) => <MovieCardSkeleton key={i} />)}
+          </div>
+          <Skeleton className="mb-6 mt-10 h-8 w-40" />
+          <div className="grid grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => <MovieCardSkeleton key={i} />)}
+          </div>
+        </div>
+        <div className="w-[360px] space-y-6">
+          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex gap-10">
@@ -70,7 +90,7 @@ export default function HomeTab() {
                 {hotMovies.length}
               </span>
             </h2>
-            <a className="flex items-center text-primary hover:underline text-sm cursor-pointer">
+            <a href="/?tab=movies" className="flex items-center text-primary hover:underline text-sm cursor-pointer">
               全部 <ChevronRight size={14} />
             </a>
           </div>
@@ -99,7 +119,7 @@ export default function HomeTab() {
                 {comingMovies.length}
               </span>
             </h2>
-            <a className="flex items-center text-primary hover:underline text-sm cursor-pointer">
+            <a href="/?tab=movies" className="flex items-center text-primary hover:underline text-sm cursor-pointer">
               全部 <ChevronRight size={14} />
             </a>
           </div>
@@ -197,7 +217,7 @@ export default function HomeTab() {
           <div className="mb-10">
             <div className="flex justify-between items-end mb-4">
               <h3 className="text-lg font-semibold text-body-dark">最受期待</h3>
-              <a className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
+              <a href="/?tab=movies" className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
                 查看完整榜单 <ChevronRight size={12} />
               </a>
             </div>
@@ -282,7 +302,7 @@ export default function HomeTab() {
           <div className="mb-10">
             <div className="flex justify-between items-end mb-4">
               <h3 className="text-lg font-semibold text-body-dark">TOP 100</h3>
-              <a className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
+              <a href="/?tab=movies" className="flex items-center text-muted-strong hover:text-primary text-xs cursor-pointer transition-colors">
                 查看完整榜单 <ChevronRight size={12} />
               </a>
             </div>

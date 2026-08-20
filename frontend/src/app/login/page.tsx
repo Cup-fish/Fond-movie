@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useUserStore } from '@/store/user'
@@ -8,6 +8,8 @@ import { useUserStore } from '@/store/user'
 /**
  * 登录页 — 交易面（浅色模式）
  * 深色主站与浅色交易面共享黄色 CTA 与灰蓝描边（DESIGN.md multi-theme）
+ *
+ * 支持 ?reason=expired（登录过期被跳转回来时提示）与 ?redirect=xxx（登录后回跳）
  */
 export default function LoginPage() {
   const router = useRouter()
@@ -15,6 +17,16 @@ export default function LoginPage() {
   const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // 登录过期被跳转回登录页 → 明确提示原因
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('reason') === 'expired') {
+        toast.error('登录已过期，请重新登录')
+      }
+    } catch {}
+  }, [])
 
   const handleLogin = async () => {
     if (!account.trim()) return toast.error('用户名不能为空！')
@@ -25,7 +37,14 @@ export default function LoginPage() {
       const result = await loginAsync(account, password)
       if (result.success) {
         toast.success('登录成功')
-        router.push('/')
+        // 从 ?redirect= 取回跳地址（登录过期/未登录被拦截时），默认回首页
+        let redirectTo = '/'
+        try {
+          const params = new URLSearchParams(window.location.search)
+          const r = params.get('redirect')
+          if (r && r.startsWith('/') && !r.startsWith('//')) redirectTo = r
+        } catch {}
+        router.push(redirectTo)
       } else {
         toast.error(result.msg || '登录失败')
       }

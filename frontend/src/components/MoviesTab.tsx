@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import MovieCard from '@/components/MovieCard'
-import Loading from '@/components/Loading'
+import { MovieCardSkeleton } from '@/components/Skeleton'
 import api from '@/lib/api'
 import type { MovieItem } from '@/types'
 
@@ -127,7 +127,9 @@ export default function MoviesTab() {
 
       {/* Grid */}
       {loading && movies.length === 0 ? (
-        <Loading />
+        <div className="grid grid-cols-6 gap-x-8 gap-y-10">
+          {Array.from({ length: 12 }).map((_, i) => <MovieCardSkeleton key={i} />)}
+        </div>
       ) : movies.length === 0 ? (
         <div className="text-center py-20 text-muted">暂无相关电影</div>
       ) : (

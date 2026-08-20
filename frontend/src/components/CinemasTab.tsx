@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useHomeStore } from '@/store/home'
-import Loading from '@/components/Loading'
+import { CinemaRowSkeleton } from '@/components/Skeleton'
 import api from '@/lib/api'
 import { formatDate } from '@/lib/utils'
 import type { CinemaItem } from '@/types'
@@ -12,6 +12,35 @@ const BRAND_OPTIONS = ['全部', '万达影城', 'CGV影城', '星美国际', '�
 const DISTRICT_OPTIONS = ['全部', '朝阳区', '海淀区', '东城区', '西城区', '丰台区', '通州区']
 const HALL_TYPE_OPTIONS = ['全部', 'IMAX厅', '杜比全景声厅', '4DX厅', '中国巨幕厅', '激光厅', '杜比影院']
 const SERVICE_OPTIONS = ['全部', '可退票', '可改签']
+
+function normalizeFilterName(name: string): string {
+  return name.replace(/厅|影院|影城|可/g, '').trim()
+}
+
+function findIdByNormalizedName(items: any[] | undefined, name: string): number | undefined {
+  if (!items) return undefined
+  const target = normalizeFilterName(name)
+  for (const item of items) {
+    if (item?.name == null) continue
+    const current = normalizeFilterName(item.name)
+    if (current === target || current.includes(target) || target.includes(current)) {
+      if (item.id != null && item.id > 0) return item.id
+    }
+  }
+  return undefined
+}
+
+function findDistrictId(node: any, name: string): number | undefined {
+  if (!node) return undefined
+  if (node.name === name && node.id != null && node.id > 0) return node.id
+  if (Array.isArray(node.subItems)) {
+    for (const child of node.subItems) {
+      const id = findDistrictId(child, name)
+      if (id != null) return id
+    }
+  }
+  return undefined
+}
 
 function FilterRow({
   label,
@@ -50,47 +79,70 @@ function FilterRow({
 
 export default function CinemasTab() {
   const router = useRouter()
-  const { posId } = useHomeStore()
+  const { posId, setPosId, setPosition } = useHomeStore()
   const [cinemas, setCinemas] = useState<CinemaItem[]>([])
+  const [filterOptions, setFilterOptions] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [activeBrand, setActiveBrand] = useState('全部')
   const [activeDistrict, setActiveDistrict] = useState('全部')
   const [activeHallType, setActiveHallType] = useState('全部')
   const [activeService, setActiveService] = useState('全部')
 
-  useEffect(() => {
-    const cityId = posId ?? 1
-    api
-      .getCinemaList({
-        cityId,
-        day: formatDate(),
-      })
-      .then((res) => {
-        const list = res?.cinemas || res?.data?.cinemas || []
-        setCinemas(list)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [posId])
+  const cityId = posId ?? 1
 
-  /* ---- 前端过滤逻辑 ---- */
-  const filteredCinemas = useMemo(() => {
-    return cinemas.filter((c) => {
-      // 品牌：影院名包含品牌关键词
-      if (activeBrand !== '全部' && !c.nm?.includes(activeBrand.replace('影城', '').replace('国际', ''))) return false
-      // 行政区：地址包含区名
-      if (activeDistrict !== '全部' && !c.addr?.includes(activeDistrict)) return false
-      // 影厅类型：hallType 数组是否包含
-      if (activeHallType !== '全部') {
-        const halls = c.tag?.hallType || []
-        if (!halls.some((h) => h.includes(activeHallType.replace('厅', '').replace('影院', '')))) return false
-      }
-      // 影院服务
-      if (activeService === '可退票' && !c.tag?.allowRefund) return false
-      if (activeService === '可改签' && !c.tag?.endorse) return false
-      return true
-    })
-  }, [cinemas, activeBrand, activeDistrict, activeHallType, activeService])
+  const fetchFilterOptions = useCallback(async () => {
+    try {
+      const res = await api.filterCinemas({ ci: cityId })
+      setFilterOptions(res.data || res)
+    } catch {
+      // 筛选项加载失败不阻塞影院列表
+    }
+  }, [cityId])
+
+  const fetchCinemas = useCallback(async () => {
+    setLoading(true)
+    const params: any = {
+      cityId,
+      day: formatDate(),
+    }
+
+    if (activeBrand !== '全部' && filterOptions?.brand) {
+      const brandId = findIdByNormalizedName(filterOptions.brand, activeBrand)
+      if (brandId) params.brandId = brandId
+    }
+    if (activeDistrict !== '全部' && filterOptions?.district) {
+      const districtId = findDistrictId(filterOptions.district, activeDistrict)
+      if (districtId) params.districtId = districtId
+    }
+    if (activeHallType !== '全部' && filterOptions?.hallType?.subItems) {
+      const hallTypeId = findIdByNormalizedName(filterOptions.hallType.subItems, activeHallType)
+      if (hallTypeId) params.hallType = hallTypeId
+    }
+    if (activeService !== '全部' && filterOptions?.service?.subItems) {
+      const serviceId = findIdByNormalizedName(filterOptions.service.subItems, activeService)
+      if (serviceId) params.serviceId = serviceId
+    }
+
+    try {
+      const res = await api.getCinemaList(params)
+      const list = res?.cinemas || res?.data?.cinemas || []
+      setCinemas(list)
+    } catch {
+      setCinemas([])
+    } finally {
+      setLoading(false)
+    }
+  }, [cityId, activeBrand, activeDistrict, activeHallType, activeService, filterOptions])
+
+  // 初始化：加载筛选项 + 影院列表
+  useEffect(() => {
+    fetchFilterOptions()
+  }, [fetchFilterOptions])
+
+  // 筛选条件或城市变化时重新拉取
+  useEffect(() => {
+    fetchCinemas()
+  }, [fetchCinemas])
 
   return (
     <div>
@@ -129,12 +181,25 @@ export default function CinemasTab() {
 
       {/* Cinema List */}
       {loading ? (
-        <Loading />
-      ) : filteredCinemas.length === 0 ? (
-        <div className="text-center py-20 text-muted">暂无影院数据</div>
+        <div className="space-y-0">
+          {Array.from({ length: 6 }).map((_, i) => <CinemaRowSkeleton key={i} />)}
+        </div>
+      ) : cinemas.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-muted mb-4">当前城市暂无影院数据，或筛选条件没有匹配结果</p>
+          <button
+            onClick={() => {
+              setPosId(1)
+              setPosition('北京')
+            }}
+            className="px-6 py-2.5 bg-primary text-on-primary rounded-md text-sm font-medium hover:bg-primary-active transition-colors pressable"
+          >
+            切换到北京演示数据
+          </button>
+        </div>
       ) : (
         <div className="space-y-0">
-          {filteredCinemas.map((cinema) => {
+          {cinemas.map((cinema) => {
             const tags: { text: string; type: 'blue' | 'orange' }[] = []
             if (cinema.tag?.allowRefund) tags.push({ text: '退票', type: 'blue' })
             if (cinema.tag?.endorse) tags.push({ text: '改签', type: 'blue' })

@@ -16,12 +16,21 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
+    private static final String DEFAULT_SECRET = "change-me-to-a-random-256-bit-jwt-secret-at-least-32-chars";
+
     private final SecretKey key;
     private final long expireMs;
 
     public JwtUtil(
             @Value("${maoyan.jwt.secret:change-me-to-a-random-256-bit-jwt-secret-at-least-32-chars}") String secret,
-            @Value("${maoyan.jwt.expire-hours:72}") long expireHours) {
+            @Value("${maoyan.jwt.expire-hours:72}") long expireHours,
+            @Value("${maoyan.jwt.allow-default-secret:true}") boolean allowDefaultSecret) {
+        if (DEFAULT_SECRET.equals(secret) && !allowDefaultSecret) {
+            throw new IllegalStateException("JWT_SECRET must be configured in production, do not use the default value");
+        }
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 bytes");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expireMs = expireHours * 3600 * 1000;
     }

@@ -41,9 +41,12 @@ function PaymentContent() {
           setTimeLeft(diff)
         }
       })
-      .catch(() => toast.error('加载订单失败'))
+      .catch((e) => {
+        // 401（会话过期）由全局拦截器清理并跳转登录，这里不重复提示
+        if (e?.response?.status !== 401) toast.error('加载订单失败')
+      })
       .finally(() => setLoading(false))
-  }, [orderNo])
+  }, [orderNo, fetchPoints])
 
   // 倒计时
   useEffect(() => {
@@ -61,6 +64,7 @@ function PaymentContent() {
       })
     }, 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft > 0])
 
   // 组件卸载时清理轮询
@@ -77,36 +81,50 @@ function PaymentContent() {
 
   // ==================== 扫码支付 ====================
 
+  let pollingInFlight = false
+
   const stopPolling = () => {
     if (pollRef.current) {
-      clearInterval(pollRef.current)
+      clearTimeout(pollRef.current)
       pollRef.current = null
+    }
+  }
+
+  const pollOnce = async () => {
+    if (pollingInFlight || !orderNo) return
+    pollingInFlight = true
+    try {
+      const res = await api.getPaymentStatus({ orderNo })
+      const data = res.data || res
+      // 订单已支付 → 轮询到成功才跳转
+      if (data.orderStatus === 1) {
+        stopPolling()
+        if (data.remainingPoints != null) setPoints(data.remainingPoints)
+        toast.success('支付成功！')
+        router.push(`/order-success?orderNo=${orderNo}`)
+        return
+      }
+      if (data.paymentStatus === 2 || data.orderStatus === 2) {
+        // 支付单已关闭 / 订单已取消
+        stopPolling()
+        toast.error('订单已关闭，请重新选座')
+        router.push('/')
+        return
+      }
+    } catch {
+      // 网络抖动：下一轮继续轮询
+    } finally {
+      pollingInFlight = false
+      // 只有未被 stopPolling 终止时才继续下一轮
+      if (pollRef.current) {
+        pollRef.current = setTimeout(pollOnce, 3000)
+      }
     }
   }
 
   const startPolling = () => {
     stopPolling()
-    pollRef.current = setInterval(async () => {
-      if (!orderNo) return
-      try {
-        const res = await api.getPaymentStatus({ orderNo })
-        const data = res.data || res
-        // 订单已支付 → 轮询到成功才跳转
-        if (data.orderStatus === 1) {
-          stopPolling()
-          if (data.remainingPoints != null) setPoints(data.remainingPoints)
-          toast.success('支付成功！')
-          router.push(`/order-success?orderNo=${orderNo}`)
-        } else if (data.paymentStatus === 2 || data.orderStatus === 2) {
-          // 支付单已关闭 / 订单已取消
-          stopPolling()
-          toast.error('订单已关闭，请重新选座')
-          router.push('/')
-        }
-      } catch {
-        // 网络抖动：下一轮继续轮询
-      }
-    }, 3000)
+    pollRef.current = setTimeout(pollOnce, 3000)
   }
 
   /** 创建支付单并弹出二维码 */
@@ -122,15 +140,18 @@ function PaymentContent() {
       if (res.code === 200) {
         setPaymentNo(res.data?.paymentNo || '')
         // 二维码内容指向当前站点收银台（手机同 Wi-Fi 扫码可访问局域网 IP）
-        setQrValue(`${window.location.origin}/mock-pay?orderNo=${orderNo}`)
+        setQrValue(`${window.location.origin}/mock-pay?orderNo=${orderNo}&paymentNo=${res.data?.paymentNo || ''}`)
         setShowQr(true)
         startPolling()
       } else {
         toast.error(res.message || '创建支付单失败')
       }
     } catch (e: any) {
-      const msg = e?.response?.data?.message || '创建支付单失败'
-      toast.error(msg)
+      // 401（会话过期）由全局拦截器清理并跳转登录，这里不重复弹原始错误
+      if (e?.response?.status !== 401) {
+        const msg = e?.response?.data?.message || '创建支付单失败'
+        toast.error(msg)
+      }
     } finally {
       setPaying(false)
     }

@@ -6,6 +6,7 @@ import com.maoyan.domain.model.vo.Result;
 import com.maoyan.service.infrastructure.QueueService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,6 +26,9 @@ import org.springframework.web.bind.annotation.*;
 public class QueueController {
 
     private final QueueService queueService;
+
+    @Value("${maoyan.admin-token:}")
+    private String adminToken;
 
     public QueueController(QueueService queueService) {
         this.queueService = queueService;
@@ -95,7 +99,12 @@ public class QueueController {
     @PostMapping("/admin/init-hot")
     public Result<Void> initHotSchedule(
             @RequestParam Long scheduleId,
-            @RequestParam int maxAdmission) {
+            @RequestParam int maxAdmission,
+            HttpServletRequest request) {
+        String token = request.getHeader("X-Admin-Token");
+        if (adminToken == null || adminToken.isBlank() || !adminToken.equals(token)) {
+            return Result.fail(403, "无权限执行该操作");
+        }
         queueService.initHotSchedule(scheduleId, maxAdmission);
         log.info("[Queue] Admin initialized hot schedule: scheduleId={}, maxAdmission={}",
                 scheduleId, maxAdmission);

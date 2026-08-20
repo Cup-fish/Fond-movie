@@ -60,8 +60,9 @@ public class UserService {
         try {
             log.info("用户注册: account={}", account);
 
-            // 校验邀请码
-            if (!"lpf".equals(dto.getInviteCode())) {
+            // 邀请码选填：填写时必须正确，不填则直接放行
+            String inviteCode = dto.getInviteCode();
+            if (inviteCode != null && !inviteCode.isBlank() && !"lpf".equals(inviteCode.trim())) {
                 throw new BizException(ResponseCodeEnum.BAD_REQUEST, "邀请码错误");
             }
 
@@ -85,8 +86,8 @@ public class UserService {
             return toVO(user, true);
         } finally {
             lock.unlock();
-            // 清理锁对象防止内存泄漏（仅在无竞争时移除）
-            registerLocks.remove(account, lock);
+            // 注意：不能在这里 remove，否则同一账号可能同时创建两把锁，破坏串行注册。
+            // 账号数量有限，保留锁对象的内存成本可接受。
         }
     }
 

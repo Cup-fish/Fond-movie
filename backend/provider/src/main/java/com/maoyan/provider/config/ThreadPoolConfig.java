@@ -56,28 +56,6 @@ public class ThreadPoolConfig {
     }
 
     /**
-     * IO密集型线程池（用于数据库查询并发场景）
-     */
-    @Bean("ioTaskExecutor")
-    public ThreadPoolExecutor ioTaskExecutor() {
-        int cpuCores = Runtime.getRuntime().availableProcessors();
-        int corePoolSize = cpuCores * 2;
-        int maxPoolSize = cpuCores * 4;
-
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                corePoolSize,
-                maxPoolSize,
-                120L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(512),
-                new NamedThreadFactory("io-task"),
-                new ThreadPoolExecutor.CallerRunsPolicy()
-        );
-
-        log.info("IO线程池初始化完成: core={}, max={}", corePoolSize, maxPoolSize);
-        return executor;
-    }
-
-    /**
      * 自定义线程工厂 — 设置线程名前缀，便于排查问题
      */
     public static class NamedThreadFactory implements ThreadFactory {

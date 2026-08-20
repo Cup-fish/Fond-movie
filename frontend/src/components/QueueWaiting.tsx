@@ -31,10 +31,15 @@ export default function QueueWaiting({
     return m > 0 ? `${m}分${s}秒` : `${s}秒`
   }
 
-  // 轮询排队状态
+  // 轮询排队状态（递归 setTimeout，避免请求慢时叠加）
   useEffect(() => {
-    // 先不要立即轮询，用初始值
-    const interval = setInterval(async () => {
+    let cancelled = false
+    let inFlight = false
+    let timer: NodeJS.Timeout | null = null
+
+    const poll = async () => {
+      if (cancelled || inFlight) return
+      inFlight = true
       try {
         const res = await api.queueStatus({ scheduleId })
         const data = res.data || res
@@ -47,10 +52,19 @@ export default function QueueWaiting({
         setSecondsLeft(data.estimatedWaitSeconds)
       } catch {
         // 静默处理
+      } finally {
+        inFlight = false
+        if (!cancelled) {
+          timer = setTimeout(poll, 5000)
+        }
       }
-    }, 5000) // 每5秒轮询
+    }
 
-    return () => clearInterval(interval)
+    timer = setTimeout(poll, 5000)
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
   }, [scheduleId, onAdmitted])
 
   // 倒计时更新

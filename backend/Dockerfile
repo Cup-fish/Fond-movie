@@ -4,7 +4,7 @@
 # 本地打包好 JAR 后直接 COPY，跳过服务器编译
 # =========================================
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 
 LABEL maintainer="maoyan-team"
 LABEL description="猫眼电影后端服务"

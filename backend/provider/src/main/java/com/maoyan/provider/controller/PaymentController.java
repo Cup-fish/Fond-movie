@@ -71,11 +71,12 @@ public class PaymentController {
     @PostMapping("/mock/notify")
     public Result<Void> mockNotify(@RequestBody(required = false) Map<String, String> body) {
         String orderNo = body != null ? body.get("orderNo") : null;
+        String paymentNo = body != null ? body.get("paymentNo") : null;
         String sign = body != null ? body.get("sign") : null;
         if (orderNo == null || orderNo.isBlank()) {
             return Result.fail(400, "orderNo不能为空");
         }
-        paymentService.mockNotify(orderNo, sign);
+        paymentService.mockNotify(orderNo, paymentNo, sign);
         return Result.ok();
     }
 

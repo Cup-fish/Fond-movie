@@ -15,10 +15,13 @@ import com.maoyan.domain.model.vo.OrderVO;
 import com.maoyan.service.infrastructure.OutboxService;
 import com.maoyan.service.infrastructure.QueueService;
 import com.maoyan.service.infrastructure.SeatLockScriptService;
+import com.maoyan.service.infrastructure.TransactionSynchronizationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +46,7 @@ public class OrderService {
     private final OutboxService outboxService;
     private final SeatLockScriptService lockScriptService;
     private final QueueService queueService;
+    private final TransactionTemplate transactionTemplate;
 
     private static final DateTimeFormatter VO_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -52,7 +56,8 @@ public class OrderService {
                         PaymentTradeMapper paymentTradeMapper,
                         OutboxService outboxService,
                         SeatLockScriptService lockScriptService,
-                        QueueService queueService) {
+                        QueueService queueService,
+                        PlatformTransactionManager transactionManager) {
         this.orderMapper = orderMapper;
         this.scheduleMapper = scheduleMapper;
         this.seatLockMapper = seatLockMapper;
@@ -60,6 +65,7 @@ public class OrderService {
         this.outboxService = outboxService;
         this.lockScriptService = lockScriptService;
         this.queueService = queueService;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -88,15 +94,15 @@ public class OrderService {
      * <p>正常情况延时消息已处理，这里是兜底</p>
      */
     @Scheduled(fixedDelay = 60000)
-    @Transactional(rollbackFor = Exception.class)
     public void cancelExpiredOrders() {
         LocalDateTime now = LocalDateTime.now();
         List<OrderPO> expired = orderMapper.selectExpiredPendingOrders(now, 100);
         if (expired.isEmpty()) return;
 
+        // 每个订单独立事务，避免单个失败影响整批，也避免长事务锁住大量行
         for (OrderPO order : expired) {
             try {
-                closePendingOrder(order, "TIMEOUT");
+                transactionTemplate.executeWithoutResult(status -> closePendingOrder(order, "TIMEOUT"));
             } catch (Exception e) {
                 log.error("[Order] Failed to close expired order: orderNo={}", order.getOrderNo(), e);
             }
@@ -127,54 +133,63 @@ public class OrderService {
         int closed = orderMapper.closePendingOrder(order.getOrderNo(), now);
         if (closed == 0) return;
 
-        // ★ 先释放 Redis 锁（DB 事务之前），防止座位被幽灵锁定
-        releaseRedisLocks(order);
+        Long scheduleId = order.getScheduleId();
+        Long userId = order.getUserId();
+        int seatCount = order.getSeatCount();
+        String orderNo = order.getOrderNo();
+
+        // 捕获当前 DB 锁座记录，供事务提交后释放 Redis 锁
+        List<SeatLockPO> locks = seatLockMapper.selectLocksByOrderNo(orderNo);
+        List<LockSeatsDTO.SeatPos> positions = locks.stream().map(lock -> {
+            LockSeatsDTO.SeatPos pos = new LockSeatsDTO.SeatPos();
+            pos.setRow(lock.getRowNum());
+            pos.setCol(lock.getColNum());
+            return pos;
+        }).toList();
 
         // 回滚库存
-        scheduleMapper.rollbackStock(order.getScheduleId(), order.getSeatCount());
+        scheduleMapper.rollbackStock(scheduleId, seatCount);
 
-        // 释放座位锁
-        seatLockMapper.releaseOrderLocks(order.getOrderNo());
+        // 释放座位锁（DB）
+        seatLockMapper.releaseOrderLocks(orderNo);
 
         // ★ 关单联动：支付单同步关闭
-        paymentTradeMapper.closeByOrderNo(order.getOrderNo());
-
-        // ★ 释放排队入场名额（热门场次准入推进）
-        queueService.leave(order.getScheduleId(), order.getUserId());
+        paymentTradeMapper.closeByOrderNo(orderNo);
 
         // outbox 事件
         Map<String, Object> eventPayload = new LinkedHashMap<>();
         eventPayload.put("type", "ORDER_CANCELLED");
-        eventPayload.put("orderNo", order.getOrderNo());
-        eventPayload.put("userId", order.getUserId());
-        eventPayload.put("scheduleId", order.getScheduleId());
-        eventPayload.put("seatCount", order.getSeatCount());
+        eventPayload.put("orderNo", orderNo);
+        eventPayload.put("userId", userId);
+        eventPayload.put("scheduleId", scheduleId);
+        eventPayload.put("seatCount", seatCount);
         eventPayload.put("reason", reason);
         eventPayload.put("timestamp", System.currentTimeMillis());
         outboxService.writeEvent("ORDER_CANCELLED", eventPayload);
 
+        // 事务提交后再释放 Redis 锁 + 排队名额，避免 DB 回滚后状态不一致
+        TransactionSynchronizationUtils.afterCommit(() -> {
+            releaseRedisLocks(scheduleId, positions, userId);
+            queueService.leave(scheduleId, userId);
+        });
+
         log.info("[Order] Closed: orderNo={}, reason={}, seatsReturned={}",
-                order.getOrderNo(), reason, order.getSeatCount());
+                orderNo, reason, seatCount);
     }
 
     /**
-     * 释放订单关联的 Redis 座位锁（best-effort）
+     * 释放 Redis 座位锁（best-effort，事务提交后调用）
      */
-    private void releaseRedisLocks(OrderPO order) {
+    private void releaseRedisLocks(Long scheduleId, List<LockSeatsDTO.SeatPos> positions, Long userId) {
         try {
-            List<SeatLockPO> locks = seatLockMapper.selectLocksByOrderNo(order.getOrderNo());
-            if (locks != null && !locks.isEmpty()) {
-                List<LockSeatsDTO.SeatPos> positions = locks.stream().map(lock -> {
-                    LockSeatsDTO.SeatPos pos = new LockSeatsDTO.SeatPos();
-                    pos.setRow(lock.getRowNum());
-                    pos.setCol(lock.getColNum());
-                    return pos;
-                }).toList();
-                lockScriptService.releaseSeats(order.getScheduleId(), positions, order.getUserId());
-                log.info("[Order] Released {} Redis locks for orderNo={}", positions.size(), order.getOrderNo());
+            if (positions != null && !positions.isEmpty()) {
+                lockScriptService.releaseSeats(scheduleId, positions, userId);
+                log.info("[Order] Released {} Redis locks for scheduleId={}, userId={}",
+                        positions.size(), scheduleId, userId);
             }
         } catch (Exception e) {
-            log.error("[Order] Failed to release Redis locks for orderNo={}", order.getOrderNo(), e);
+            log.error("[Order] Failed to release Redis locks for scheduleId={}, userId={}",
+                    scheduleId, userId, e);
         }
     }
 

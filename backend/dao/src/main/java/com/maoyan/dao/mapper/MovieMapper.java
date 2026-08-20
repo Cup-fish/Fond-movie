@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.SelectProvider;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -68,4 +69,10 @@ public interface MovieMapper extends BaseMapper<MoviePO> {
                            @Param("cat") String cat,
                            @Param("src") String src,
                            @Param("year") Integer year);
+
+    /**
+     * 原子 +1 想看数（配合 user_wish 唯一索引，避免重复消息重复累加）
+     */
+    @Update("UPDATE movie SET wish = wish + 1 WHERE id = #{movieId} AND deleted = 0")
+    int incrementWish(@Param("movieId") Long movieId);
 }

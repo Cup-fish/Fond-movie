@@ -17,6 +17,7 @@ import type { MockOrderInfoItem } from '@/types'
 function MockPayContent() {
   const searchParams = useSearchParams()
   const orderNo = searchParams.get('orderNo')
+  const paymentNo = searchParams.get('paymentNo') || ''
 
   const [info, setInfo] = useState<MockOrderInfoItem | null>(null)
   const [loading, setLoading] = useState(true)
@@ -65,11 +66,15 @@ function MockPayContent() {
 
   const handleConfirm = async () => {
     if (!orderNo || paying || done) return
+    if (!paymentNo) {
+      toast.error('支付凭证缺失，请重新扫码')
+      return
+    }
     setPaying(true)
     try {
       // 模拟支付网关处理中（真实场景为支付宝/微信交互 + 异步回调）
       await new Promise((r) => setTimeout(r, 1200))
-      const res = await api.mockNotify({ orderNo })
+      const res = await api.mockNotify({ orderNo, paymentNo })
       if (res.code === 200) {
         setDone(true)
         toast.success('支付成功！')

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
+import BackToTop from '@/components/BackToTop'
 import './globals.css'
 
 /**
@@ -32,6 +33,7 @@ export default function RootLayout({
     <html lang="zh-CN" className={`${inter.variable} ${plex.variable}`}>
       <body className="bg-canvas-dark min-h-screen font-sans text-body-dark" suppressHydrationWarning>
         {children}
+        <BackToTop />
         <Toaster position="top-center" richColors theme="dark" />
       </body>
     </html>

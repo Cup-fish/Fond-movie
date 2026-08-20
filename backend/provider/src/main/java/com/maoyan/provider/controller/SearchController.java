@@ -34,9 +34,6 @@ public class SearchController {
             @RequestParam Long cityId,
             @RequestParam(required = false) Integer stype
     ) {
-        // 异步记录搜索行为
-        searchService.recordSearchAsync(kw, cityId);
-
         return searchService.search(kw, cityId);
     }
 }

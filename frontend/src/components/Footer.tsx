@@ -23,25 +23,25 @@ export default function Footer() {
           <div>
             <h3 className="text-sm font-semibold mb-3">购票指南</h3>
             <ul className="space-y-2 text-sm text-muted">
-              <li className="hover:text-ink transition-colors cursor-pointer">电影购票</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">影院排片</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">演出票务</li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/?tab=movies">电影购票</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/?tab=cinemas">影院排片</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/search?kw=演出">演出票务</a></li>
             </ul>
           </div>
           <div>
             <h3 className="text-sm font-semibold mb-3">用户服务</h3>
             <ul className="space-y-2 text-sm text-muted">
-              <li className="hover:text-ink transition-colors cursor-pointer">我的订单</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">积分说明</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">常见问题</li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/orders">我的订单</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/">积分说明</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/">常见问题</a></li>
             </ul>
           </div>
           <div>
             <h3 className="text-sm font-semibold mb-3">关于我们</h3>
             <ul className="space-y-2 text-sm text-muted">
-              <li className="hover:text-ink transition-colors cursor-pointer">关于猫眼</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">加入我们</li>
-              <li className="hover:text-ink transition-colors cursor-pointer">联系我们</li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/">关于猫眼</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/">加入我们</a></li>
+              <li><a className="hover:text-ink transition-colors cursor-pointer" href="/">联系我们</a></li>
             </ul>
           </div>
         </div>

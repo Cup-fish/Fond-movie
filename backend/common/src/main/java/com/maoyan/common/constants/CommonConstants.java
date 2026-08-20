@@ -22,6 +22,4 @@ public final class CommonConstants {
     /** JWT token前缀 */
     public static final String TOKEN_PREFIX = "Bearer ";
 
-    /** 模拟支付网关签名密钥（仅演示用，真实环境由支付平台下发，不暴露给前端） */
-    public static final String MOCK_PAYMENT_SECRET = "maoyan-mock-pay-secret";
 }

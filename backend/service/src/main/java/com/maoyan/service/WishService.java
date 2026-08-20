@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * 想看服务 — 实时处理（面试核心亮点）
@@ -67,7 +68,7 @@ public class WishService {
                     CacheConstants.MOVIE_WISH_HASH, String.valueOf(movieId), 1);
             if (rocketMQTemplate != null) {
                 try {
-                    WishEvent event = new WishEvent(userId, movieId, 1, System.currentTimeMillis());
+                    WishEvent event = new WishEvent(userId, movieId, 1, System.currentTimeMillis(), UUID.randomUUID().toString());
                     String destination = MQConstants.WISH_TOPIC + ":" + MQConstants.TAG_WISH_WRITEBACK;
                     rocketMQTemplate.syncSend(destination, event);
                     log.info("[Wish] Event sent: userId={}, movieId={}, newCount={}", userId, movieId, count);
@@ -94,20 +95,21 @@ public class WishService {
 
     /** 同步写回 DB（降级或 MQ 不可用时） */
     private void syncWriteBack(Long userId, Long movieId) {
+        // 只有真正新增 user_wish 记录才累加电影想看数，避免重复消息/并发重复计数
+        UserWishPO wish = new UserWishPO();
+        wish.setUserId(userId);
+        wish.setMovieId(movieId);
+        wish.setCreateTime(LocalDateTime.now());
         try {
-            UserWishPO wish = new UserWishPO();
-            wish.setUserId(userId);
-            wish.setMovieId(movieId);
-            wish.setCreateTime(LocalDateTime.now());
-            userWishMapper.insert(wish);
+            int inserted = userWishMapper.insert(wish);
+            if (inserted <= 0) {
+                return;
+            }
         } catch (Exception e) {
             log.debug("[Wish] Wish record already exists: userId={}, movieId={}", userId, movieId);
+            return;
         }
-        MoviePO movie = movieMapper.selectById(movieId);
-        if (movie != null) {
-            movie.setWish(movie.getWish() + 1);
-            movieMapper.updateById(movie);
-        }
+        movieMapper.incrementWish(movieId);
     }
 
     /**

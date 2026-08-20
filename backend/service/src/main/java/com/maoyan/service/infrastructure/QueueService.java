@@ -82,17 +82,27 @@ public class QueueService {
     private static final String LEAVE_AND_ADVANCE_LUA = """
             local admit_counter = KEYS[1]   -- queue:admission:{scheduleId}
             local waiting_zset  = KEYS[2]   -- queue:waiting:{scheduleId}
-            local token_prefix  = KEYS[3]   -- queue:token:{scheduleId}:
+            local left_key      = KEYS[3]   -- queue:left:{scheduleId}:{userId}
+            local token_key     = KEYS[4]   -- queue:token:{scheduleId}:{userId}
+            local token_prefix  = KEYS[5]   -- queue:token:{scheduleId}:
 
             local token_ttl = tonumber(ARGV[1])
+            local left_ttl  = tonumber(ARGV[2])
 
-            -- 1. 释放当前名额
+            -- 1. 幂等：每个用户只释放一次名额（即使 token 已过期也能正确释放）
+            if redis.call('EXISTS', left_key) == 1 then
+                return 0
+            end
+            redis.call('SET', left_key, '1', 'EX', left_ttl)
+            redis.call('DEL', token_key)
+
+            -- 2. 释放当前名额
             local current = tonumber(redis.call('GET', admit_counter) or '0')
             if current > 0 then
                 redis.call('DECR', admit_counter)
             end
 
-            -- 2. 从等候队列推进下一位
+            -- 3. 从等候队列推进下一位
             local next_user = redis.call('ZPOPMIN', waiting_zset)
             if next_user and #next_user > 0 then
                 local next_user_id = next_user[1]
@@ -198,18 +208,18 @@ public class QueueService {
         if (stringRedisTemplate == null) return;
 
         try {
-            // 先删除当前用户的令牌
-            String tokenKey = buildTokenKey(scheduleId, userId);
-            stringRedisTemplate.delete(tokenKey);
-
             String admitKey = CacheConstants.QUEUE_ADMISSION_PREFIX + scheduleId;
             String waitingKey = CacheConstants.QUEUE_WAITING_PREFIX + scheduleId;
+            String leftKey = CacheConstants.QUEUE_LEFT_PREFIX + scheduleId + ":" + userId;
+            String tokenKey = buildTokenKey(scheduleId, userId);
             String tokenPrefix = CacheConstants.QUEUE_TOKEN_PREFIX + scheduleId + ":";
 
+            // Lua 内原子完成：幂等标记 + 删除令牌 + 释放名额 + 推进下一位
             Long nextUserId = stringRedisTemplate.execute(
                     leaveAndAdvanceScript,
-                    Arrays.asList(admitKey, waitingKey, tokenPrefix),
-                    String.valueOf(CacheConstants.QUEUE_TOKEN_TTL_SECONDS)
+                    Arrays.asList(admitKey, waitingKey, leftKey, tokenKey, tokenPrefix),
+                    String.valueOf(CacheConstants.QUEUE_TOKEN_TTL_SECONDS),
+                    String.valueOf(24 * 60 * 60)
             );
 
             if (nextUserId != null && nextUserId > 0) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 import Loading from '@/components/Loading'
@@ -53,6 +53,15 @@ function CinemaDetailContent() {
       .finally(() => setLoading(false))
   }, [cinemaId])
 
+  const loadSchedules = useCallback((date: string) => {
+    if (!cinemaId || !selectedMovieId) return
+    setScheduleLoading(true)
+    api.getCinemaSchedules({ cinemaId: Number(cinemaId), movieId: selectedMovieId, showDate: date })
+      .then((res) => setSchedules(res.data || []))
+      .catch(() => setSchedules([]))
+      .finally(() => setScheduleLoading(false))
+  }, [cinemaId, selectedMovieId])
+
   // 选中电影变化 → 加载日期
   useEffect(() => {
     if (!cinemaId || !selectedMovieId) return
@@ -72,16 +81,7 @@ function CinemaDetailContent() {
         setDates([])
         setSchedules([])
       })
-  }, [cinemaId, selectedMovieId])
-
-  const loadSchedules = (date: string) => {
-    if (!cinemaId || !selectedMovieId) return
-    setScheduleLoading(true)
-    api.getCinemaSchedules({ cinemaId: Number(cinemaId), movieId: selectedMovieId, showDate: date })
-      .then((res) => setSchedules(res.data || []))
-      .catch(() => setSchedules([]))
-      .finally(() => setScheduleLoading(false))
-  }
+  }, [cinemaId, selectedMovieId, loadSchedules])
 
   const handleDateSelect = (date: string) => {
     setActiveDate(date)

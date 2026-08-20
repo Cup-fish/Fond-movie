@@ -132,10 +132,12 @@ http://localhost
   -> 超时未支付，定时任务取消订单并回滚库存
 ```
 
-更详细的面试版流程说明见：
+更详细的流程与架构说明见：
 
-- [猫眼项目完整流程详解-面试版.md](./猫眼项目完整流程详解-面试版.md)
-- [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md)
+- [猫眼项目完整流程-面试版](./docs/maoyan-flow.md)
+- [目标架构设计](./docs/architecture-target-design.md)
+- [容灾与一致性设计](./docs/architecture-resilience-design.md)
+- [UI/视觉设计规范](./DESIGN.md)
 
 ## 关键一致性设计
 
@@ -160,16 +162,11 @@ http://localhost
 - 交易链路不相信展示缓存，下单时重新做 Redis Lua 和 DB 乐观锁校验。
 - Redis 回滚失败会记录 `stock:dirty:rollback`，定时任务从 DB 拉真实库存覆盖 Redis。
 
-部署脚本需要的环境变量示例：
+部署相关脚本：
 
-```powershell
-$env:DEPLOY_HOST="your.server.ip"
-$env:DEPLOY_USER="root"
-$env:DEPLOY_KEY_FILE="C:\path\to\id_rsa"
-$env:DEPLOY_DOMAIN="example.com"
-$env:CERT_EMAIL="admin@example.com"
-python upload/deploy.py
-```
+- HTTPS 证书初始化：`docker/init-ssl.sh`
+- Docker Compose 全栈部署：`docker compose up -d --build`
+- 环境变量模板：`.env.example`（复制为 `.env` 后填写真实密钥）
 
 ## 常用命令
 

@@ -18,7 +18,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
 
   const handleRegister = async () => {
-    if (!inviteCode.trim()) return toast.error('邀请码不能为空！')
     if (!nick.trim()) return toast.error('昵称不能为空！')
     if (!account.trim()) return toast.error('用户名不能为空！')
     if (!password) return toast.error('请输入密码！')
@@ -50,7 +49,7 @@ export default function RegisterPage() {
         <div className="space-y-4">
           <input
             type="text"
-            placeholder="邀请码"
+            placeholder="邀请码（选填）"
             value={inviteCode}
             onChange={(e) => setInviteCode(e.target.value)}
             className="w-full py-3 px-4 border border-hairline-light rounded-md outline-none text-base text-ink placeholder:text-muted focus:border-primary transition-colors"

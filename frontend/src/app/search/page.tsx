@@ -77,7 +77,7 @@ function SearchContent() {
       <div className="max-w-[1280px] mx-auto mt-6 px-4">
         {results.length === 0 && keywords && (
           <div className="text-center py-20 text-muted">
-            未找到"{keywords}"相关结果
+            未找到“{keywords}”相关结果
           </div>
         )}
         <div className="bg-surface-card border border-hairline-dark rounded-lg overflow-hidden">

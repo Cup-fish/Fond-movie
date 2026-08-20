@@ -13,7 +13,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 本地 Outbox 服务 — 保证事件最终投递
@@ -44,12 +46,25 @@ public class OutboxService {
         try {
             OutboxEventPO event = new OutboxEventPO();
             event.setEventType(eventType);
-            event.setPayload(objectMapper.writeValueAsString(payload));
             event.setStatus("PENDING");
             event.setRetries(0);
             event.setCreateTime(LocalDateTime.now());
+            // payload 列 NOT NULL，先写占位符，插入成功拿到 eventId 后再更新为真实载荷
+            event.setPayload("{}");
             outboxEventMapper.insert(event);
-            log.debug("[Outbox] Event written: type={}", eventType);
+
+            // 携带 outbox eventId，供消费者做幂等去重
+            Map<String, Object> envelope = new LinkedHashMap<>();
+            if (payload instanceof Map<?, ?> map) {
+                envelope.putAll((Map<String, Object>) map);
+            } else {
+                envelope.put("payload", payload);
+            }
+            envelope.put("eventId", event.getId());
+
+            event.setPayload(objectMapper.writeValueAsString(envelope));
+            outboxEventMapper.updateById(event);
+            log.debug("[Outbox] Event written: id={}, type={}", event.getId(), eventType);
         } catch (JsonProcessingException e) {
             log.error("[Outbox] Failed to serialize event payload: type={}", eventType, e);
         }

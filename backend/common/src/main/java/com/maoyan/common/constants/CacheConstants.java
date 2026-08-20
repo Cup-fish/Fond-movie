@@ -40,9 +40,6 @@ public final class CacheConstants {
     /** 分布式锁前缀: lock:{resource} */
     public static final String LOCK_PREFIX = "lock:";
 
-    /** 电影详情缓存: movie:detail:{movieId} */
-    public static final String MOVIE_DETAIL_PREFIX = "movie:detail:";
-
     // =================== 座位锁（单座 Key，目标架构核心） ===================
 
     /** 座位锁 Key: seat:lock:{scheduleId}:{row}_{col} — 单座独立 TTL */
@@ -78,34 +75,17 @@ public final class CacheConstants {
     /** 入场令牌: queue:token:{scheduleId}:{userId} — String "1", 带 TTL */
     public static final String QUEUE_TOKEN_PREFIX = "queue:token:";
 
+    /** 离场幂等标记: queue:left:{scheduleId}:{userId} — 保证每个用户只释放一次名额 */
+    public static final String QUEUE_LEFT_PREFIX = "queue:left:";
+
     /** 入场令牌 TTL（秒）：10 分钟内完成锁座，否则自动释放名额 */
     public static final int QUEUE_TOKEN_TTL_SECONDS = 600;
 
     /** 排队等候预估每人等待时间（秒） */
     public static final int QUEUE_ESTIMATED_WAIT_PER_PERSON = 30;
 
-    // =================== 已废弃（保留兼容旧代码） ===================
-
-    /** @deprecated 使用 SEAT_LOCK_KEY_PREFIX 替代 */
-    @Deprecated
-    public static final String SEAT_LOCK_PREFIX = "seat:lock:";
-
-    /** @deprecated MQ 缓冲方案已移除 */
-    @Deprecated
-    public static final String SEAT_REQUEST_RESULT_PREFIX = "seat:request:result:";
-
-    /** @deprecated MQ 缓冲方案已移除 */
-    @Deprecated
-    public static final String SEAT_QUEUE_DEPTH_KEY = "seat:queue:depth";
-
     /** 座位锁定过期时间(分钟) */
     public static final int SEAT_LOCK_MINUTES = 15;
-
-    /** 抢座请求最大排队数 */
-    public static final int SEAT_QUEUE_MAX_DEPTH = 200;
-
-    /** 抢座请求结果缓存过期时间(秒) */
-    public static final int SEAT_REQUEST_RESULT_TTL = 30;
 
     /** 订单支付超时时间(分钟) */
     public static final int ORDER_PAY_TIMEOUT_MINUTES = 15;
@@ -117,9 +97,6 @@ public final class CacheConstants {
 
     /** L2 Redis 默认过期时间(分钟) */
     public static final long L2_EXPIRE_MINUTES = 10;
-
-    /** 默认缓存过期时间(分钟) */
-    public static final long DEFAULT_EXPIRE_MINUTES = 10;
 
     /** 城市列表缓存过期时间(小时) */
     public static final long CITY_EXPIRE_HOURS = 24;

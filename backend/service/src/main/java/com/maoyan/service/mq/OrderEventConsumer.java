@@ -8,6 +8,7 @@ import com.maoyan.dao.mapper.ScheduleMapper;
 import com.maoyan.dao.mapper.SeatLockMapper;
 import com.maoyan.domain.enums.OrderStatusEnum;
 import com.maoyan.domain.model.po.OrderPO;
+import com.maoyan.service.infrastructure.MqIdempotencyService;
 import com.maoyan.service.infrastructure.SeatSoldService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.ConsumeMode;
@@ -41,6 +42,7 @@ public class OrderEventConsumer implements RocketMQListener<String> {
     private final ScheduleMapper scheduleMapper;
     private final SeatLockMapper seatLockMapper;
     private final SeatSoldService soldService;
+    private final MqIdempotencyService mqIdempotencyService;
     private final ObjectMapper objectMapper;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -50,17 +52,20 @@ public class OrderEventConsumer implements RocketMQListener<String> {
                               ScheduleMapper scheduleMapper,
                               SeatLockMapper seatLockMapper,
                               SeatSoldService soldService,
+                              MqIdempotencyService mqIdempotencyService,
                               ObjectMapper objectMapper) {
         this.orderMapper = orderMapper;
         this.scheduleMapper = scheduleMapper;
         this.seatLockMapper = seatLockMapper;
         this.soldService = soldService;
+        this.mqIdempotencyService = mqIdempotencyService;
         this.objectMapper = objectMapper;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public void onMessage(String message) {
+        String idempotencyKey = null;
         try {
             Map<String, Object> event = objectMapper.readValue(message, Map.class);
             String type = (String) event.get("type");
@@ -68,6 +73,14 @@ public class OrderEventConsumer implements RocketMQListener<String> {
 
             if (orderNo == null) {
                 log.warn("[OrderConsumer] Missing orderNo, skip");
+                return;
+            }
+
+            // 幂等：同一 eventId 只处理一次，避免 MQ 重复投递导致重复扣/加库存
+            String eventId = (String) event.get("eventId");
+            idempotencyKey = eventId != null ? eventId : "order:" + type + ":" + orderNo;
+            if (!mqIdempotencyService.tryProcess(idempotencyKey)) {
+                log.info("[OrderConsumer] Duplicate event skipped: eventId={}, orderNo={}", eventId, orderNo);
                 return;
             }
 
@@ -80,7 +93,12 @@ public class OrderEventConsumer implements RocketMQListener<String> {
                 case "ORDER_TIMEOUT" -> handleOrderTimeout(event);
                 default -> log.debug("[OrderConsumer] Unknown type: {}", type);
             }
+
+            mqIdempotencyService.markDone(idempotencyKey);
         } catch (Exception e) {
+            if (idempotencyKey != null) {
+                mqIdempotencyService.release(idempotencyKey);
+            }
             log.error("[OrderConsumer] Failed to process message", e);
             throw new RuntimeException("Order event processing failed, trigger retry", e);
         }

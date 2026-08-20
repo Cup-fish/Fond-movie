@@ -23,6 +23,6 @@ public class UserRegisterDTO implements Serializable {
     @Size(max = 32, message = "昵称不超过32个字符")
     private String userNick;
 
-    @NotBlank(message = "邀请码不能为空")
+    @Size(max = 32, message = "邀请码不超过32个字符")
     private String inviteCode;
 }

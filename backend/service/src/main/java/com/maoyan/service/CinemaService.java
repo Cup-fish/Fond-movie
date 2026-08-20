@@ -119,21 +119,22 @@ public class CinemaService {
      * 构建层级筛选项（行政区 → 商圈）
      */
     private FilterItemVO buildHierarchicalFilter(String name, DistrictMapper mapper, Long cityId) {
-        LambdaQueryWrapper<DistrictPO> parentWrapper = new LambdaQueryWrapper<>();
-        parentWrapper.eq(DistrictPO::getCityId, cityId)
-                .eq(DistrictPO::getParentId, 0)
-                .orderByAsc(DistrictPO::getId);
-        List<DistrictPO> parents = mapper.selectList(parentWrapper);
+        // 一次查出全部行政区/商圈，内存中按 parentId 分组，避免 N+1 查询
+        List<DistrictPO> all = mapper.selectList(new LambdaQueryWrapper<DistrictPO>()
+                .eq(DistrictPO::getCityId, cityId)
+                .orderByAsc(DistrictPO::getId));
+        Map<Long, List<DistrictPO>> childrenByParent = all.stream()
+                .filter(d -> d.getParentId() != null && d.getParentId() != 0)
+                .collect(Collectors.groupingBy(DistrictPO::getParentId));
+        List<DistrictPO> parents = all.stream()
+                .filter(d -> d.getParentId() == null || d.getParentId() == 0)
+                .toList();
 
         List<FilterItemVO> items = new ArrayList<>();
         items.add(new FilterItemVO(-1, "全部", 0));
 
         for (DistrictPO parent : parents) {
-            LambdaQueryWrapper<DistrictPO> childWrapper = new LambdaQueryWrapper<>();
-            childWrapper.eq(DistrictPO::getCityId, cityId)
-                    .eq(DistrictPO::getParentId, parent.getId())
-                    .orderByAsc(DistrictPO::getId);
-            List<DistrictPO> children = mapper.selectList(childWrapper);
+            List<DistrictPO> children = childrenByParent.getOrDefault(parent.getId(), Collections.emptyList());
 
             List<FilterItemVO> childItems = new ArrayList<>();
             childItems.add(new FilterItemVO(-1, "全部", parent.getCount()));
@@ -141,7 +142,7 @@ public class CinemaService {
                     new FilterItemVO(c.getId().intValue(), c.getName(), c.getCount())
             ));
 
-            items.add(new FilterItemVO(parent.getName(), childItems));
+            items.add(new FilterItemVO(parent.getName(), parent.getId().intValue(), parent.getCount(), childItems));
         }
         return new FilterItemVO(name, items);
     }
@@ -150,21 +151,22 @@ public class CinemaService {
      * 构建地铁层级筛选项（线路 → 站点）
      */
     private FilterItemVO buildSubwayFilter(String name, Long cityId) {
-        LambdaQueryWrapper<SubwayPO> lineWrapper = new LambdaQueryWrapper<>();
-        lineWrapper.eq(SubwayPO::getCityId, cityId)
-                .eq(SubwayPO::getParentId, 0)
-                .orderByAsc(SubwayPO::getId);
-        List<SubwayPO> lines = subwayMapper.selectList(lineWrapper);
+        // 一次查出全部地铁线路/站点，内存中按 parentId 分组，避免 N+1 查询
+        List<SubwayPO> all = subwayMapper.selectList(new LambdaQueryWrapper<SubwayPO>()
+                .eq(SubwayPO::getCityId, cityId)
+                .orderByAsc(SubwayPO::getId));
+        Map<Long, List<SubwayPO>> stationsByLine = all.stream()
+                .filter(s -> s.getParentId() != null && s.getParentId() != 0)
+                .collect(Collectors.groupingBy(SubwayPO::getParentId));
+        List<SubwayPO> lines = all.stream()
+                .filter(s -> s.getParentId() == null || s.getParentId() == 0)
+                .toList();
 
         List<FilterItemVO> items = new ArrayList<>();
         items.add(new FilterItemVO(-1, "全部", 0));
 
         for (SubwayPO line : lines) {
-            LambdaQueryWrapper<SubwayPO> stationWrapper = new LambdaQueryWrapper<>();
-            stationWrapper.eq(SubwayPO::getCityId, cityId)
-                    .eq(SubwayPO::getParentId, line.getId())
-                    .orderByAsc(SubwayPO::getId);
-            List<SubwayPO> stations = subwayMapper.selectList(stationWrapper);
+            List<SubwayPO> stations = stationsByLine.getOrDefault(line.getId(), Collections.emptyList());
 
             List<FilterItemVO> stationItems = new ArrayList<>();
             stationItems.add(new FilterItemVO(-1, "全部", line.getCount()));
@@ -172,7 +174,7 @@ public class CinemaService {
                     new FilterItemVO(s.getId().intValue(), s.getName(), s.getCount())
             ));
 
-            items.add(new FilterItemVO(line.getName(), stationItems));
+            items.add(new FilterItemVO(line.getName(), line.getId().intValue(), line.getCount(), stationItems));
         }
         return new FilterItemVO(name, items);
     }
