@@ -27,7 +27,7 @@
     <td><img src="docs/screenshots/demo-06.png" alt="演示截图 6" width="360"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/demo-07.png" alt="演示截图 7" width="360"></td>
+    <td><img src="docs/screenshots/demo-07.jpg" alt="演示截图 7" width="360"></td>
     <td><img src="docs/screenshots/demo-08.png" alt="演示截图 8" width="360"></td>
     <td><img src="docs/screenshots/demo-09.png" alt="演示截图 9" width="360"></td>
   </tr>
