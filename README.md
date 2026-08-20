@@ -13,6 +13,31 @@
 - **异步能力**：RocketMQ 用于订单事件、想看写回、可选锁座缓冲削峰。
 - **工程化部署**：支持本地 H2 快速启动，也支持 Docker Compose 启动 MySQL、Redis、RocketMQ、后端、前端、Nginx。
 
+## 演示截图
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/demo-01.png" alt="演示截图 1" width="360"></td>
+    <td><img src="docs/screenshots/demo-02.png" alt="演示截图 2" width="360"></td>
+    <td><img src="docs/screenshots/demo-03.png" alt="演示截图 3" width="360"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/demo-04.png" alt="演示截图 4" width="360"></td>
+    <td><img src="docs/screenshots/demo-05.png" alt="演示截图 5" width="360"></td>
+    <td><img src="docs/screenshots/demo-06.png" alt="演示截图 6" width="360"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/demo-07.png" alt="演示截图 7" width="360"></td>
+    <td><img src="docs/screenshots/demo-08.png" alt="演示截图 8" width="360"></td>
+    <td><img src="docs/screenshots/demo-09.png" alt="演示截图 9" width="360"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/demo-10.png" alt="演示截图 10" width="360"></td>
+    <td><img src="docs/screenshots/demo-11.png" alt="演示截图 11" width="360"></td>
+    <td><img src="docs/screenshots/demo-12.png" alt="演示截图 12" width="360"></td>
+  </tr>
+</table>
+
 ## 技术栈
 
 | 模块 | 技术 |
