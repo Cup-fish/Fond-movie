@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useCallback } from 'react'
+import { Suspense, useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, X, ArrowLeft } from 'lucide-react'
 import { useHomeStore } from '@/store/home'
@@ -15,6 +15,25 @@ function SearchContent() {
   const [results, setResults] = useState<any[]>([])
   const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
 
+  const performSearch = useCallback(
+    (kw: string) => {
+      if (!kw.trim()) {
+        setResults([])
+        return
+      }
+      const cityId = posId ?? 1
+      api
+        .search({ kw, cityId, stype: 2 })
+        .then((res) => {
+          const cinemaList = res?.cinemas?.list || []
+          const movieList = res?.movies?.list || []
+          setResults([...cinemaList, ...movieList])
+        })
+        .catch(() => {})
+    },
+    [posId]
+  )
+
   const handleInput = useCallback(
     (value: string) => {
       setKeywords(value)
@@ -25,21 +44,23 @@ function SearchContent() {
         return
       }
 
-      const t = setTimeout(() => {
-        const cityId = posId ?? 1
-        api
-          .search({ kw: value, cityId, stype: 2 })
-          .then((res) => {
-            const cinemaList = res?.cinemas?.list || []
-            const movieList = res?.movies?.list || []
-            setResults([...cinemaList, ...movieList])
-          })
-          .catch(() => {})
-      }, 300)
+      const t = setTimeout(() => performSearch(value), 300)
       setTimer(t)
     },
-    [posId, timer]
+    [timer, performSearch]
   )
+
+  // 从 Header 等入口带 ?kw= 进入时，自动执行搜索
+  useEffect(() => {
+    const kw = searchParams.get('kw') || ''
+    setKeywords(kw)
+    if (kw.trim()) performSearch(kw)
+  }, [searchParams, performSearch])
+
+  // 组件卸载时清理防抖定时器
+  useEffect(() => () => {
+    if (timer) clearTimeout(timer)
+  }, [timer])
 
   return (
     <div className="min-h-screen bg-canvas-dark">
@@ -84,9 +105,17 @@ function SearchContent() {
           {results.map((item: any, i: number) => (
             <div
               key={item.id || i}
-              className="py-4 px-6 border-b border-hairline-dark last:border-0 text-sm text-muted-strong hover:bg-surface-elevated/50 hover:text-body-dark cursor-pointer transition-colors"
+              onClick={() =>
+                item.addr
+                  ? router.push(`/cinema-detail?cinemaId=${item.id}`)
+                  : router.push(`/movie-detail?movieId=${item.id}`)
+              }
+              className="py-4 px-6 border-b border-hairline-dark last:border-0 text-sm text-muted-strong hover:bg-surface-elevated/50 hover:text-body-dark cursor-pointer transition-colors flex items-center gap-3"
             >
-              {item.nm || item.name}
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-elevated text-primary font-medium">
+                {item.addr ? '影院' : '电影'}
+              </span>
+              <span>{item.nm || item.name}</span>
             </div>
           ))}
         </div>

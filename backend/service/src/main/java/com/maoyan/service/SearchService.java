@@ -31,10 +31,11 @@ public class SearchService {
      * @return 搜索结果 { cinemas: { list: [...] }, movies: { list: [...] } }
      */
     public Map<String, Object> search(String keyword, Long cityId) {
-        log.info("搜索: keyword={}, cityId={}", keyword, cityId);
+        String kw = keyword == null ? "" : keyword.trim();
+        log.info("搜索: keyword={}, cityId={}", kw, cityId);
 
-        List<MovieVO> movies = movieService.searchMovies(keyword);
-        List<CinemaVO> cinemas = cinemaService.searchCinemas(keyword, cityId);
+        List<MovieVO> movies = movieService.searchMovies(kw);
+        List<CinemaVO> cinemas = cinemaService.searchCinemas(kw, cityId);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("movies", Map.of("list", movies));
